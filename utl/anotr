@@ -1,0 +1,137 @@
+#!/bin/env bash
+###################################################
+# AUTHOR: IAROM MADDEN
+# DESCRIPTION: 
+#	
+# 	tag_add: add Sx.Rx.Nx
+# 	tag_rm: undu 'add', keep zX..
+# 	tag-cl: clone file
+#
+###################################################
+# Initialise
+cmd="${1}" && shift 1
+f="" 			# filename
+f_new="" 	# new filename
+f_ls="" 	# all 'f' with = 'id'
+Mx="" 		# Concantentated meta string
+m_pre="" 	# prepend notation
+m_id="" 	# unique f id
+m_s="" 		# person tag
+m_r="" 		# rating
+m_n="" 		# notation
+m_add="" 	# notation
+m_z="" 		# extra annotation strings
+m_ext="" 	# file ext
+debug="./x/debug"
+
+# printing
+_prnt() 				{ printf "%s\n" "$1"; }
+
+_print_id() 		{ _prnt "$f" | grep -Eo -Eo "[x,P,S][[:digit:]]{7,7}|S[[:digit:]]{7,7}|[x,s,A][[:digit:]]{4,4}"; } # todo: sed version? include an array of regex's?
+
+_print_id_new()	{ _prnt "$m_id" | sed -E 's/^.*([0-9]{4})$/\1/'; } # cut id to 4 digits
+
+_print_m() 			{ _prnt "$f" | sed -En "s/.*\.($1[a-z]+)\..*/\1/p"; } # print meta strings
+
+_print_ext()		{ _prnt "$f" | rev | cut -d "." -f -1 | rev; } # print extesion
+
+_rm_wspace() 		{ _prnt "$1" | sed -e "s/ /-/g"; } # Remove all white space
+
+_print_id_ls() 	{ find . -maxdepth 1 -type f -name "*$m_id*" | sed 's|^\./||'; } # ls of all files w id
+
+# joining
+_join_yx() { [ -n "${!1}" ] && { [ ! -n "${!2}" ] && eval "$2"=${3}'${!1}' || eval "$2"='${!1}.'${3}'${!2}'; }; } # prepend2string
+
+_join_xy() { [ -n "${!1}" ] && { [ ! -n "${!2}" ] && eval "$2"="${3}"'${!1}' || eval "$2"='${!2}.'${3}'${!1}'; }; } # append2string
+
+_handlex_no_id() { [ ! "$m_id" ] && { echo "NO DCIM code"; exit 1; }; } # handle no-id; TODO
+
+# loading:
+_load_id() { # load id/files
+	m_id="$(_print_id)"
+	m_id="$(_print_id_new)"
+	f_ls="$(_print_id_ls)"
+	_prnt "Batch: $f_ls"; }
+
+_load_m(){ # load meta strings
+	m_s="$(_print_m 'S')"
+	m_r="$(_print_m 'R')"
+	m_n="$(_print_m 'N')"
+	m_z="$(_print_m 'zX')"
+	m_ext="$(_print_ext 'zX')"; }
+
+
+# reading
+_readx() { _prnt "TAG: $1?"; read -r "$2"; _join_xy "$2" m_add "$3"; }
+
+_read() { # read tags
+	_readx "Surfer" "t_s" "S"
+	_readx "Rating" "t_r" "R"
+	_readx "Notation" "t_n" "N"
+	m_add=$(_rm_wspace "$m_add"); } # Remove all white space
+
+
+# concantenating
+_conc_m_add() { ## all; concant m's;
+	# {m_pre.m_id}.{m_s.m_r.m_n}.{m_add}.{.m_z.m_ext} :
+	[ "${m_ext}" == "txt" ] && m_pre="x" # prepend x on txt file
+	_join_xy m_id Mx "$m_pre" #1. id
+	_join_xy m_s Mx	#2. Sx; client tag
+	_join_xy m_r Mx #3. Rx; rating
+	_join_xy m_n Mx #4. Nx; notation
+	_join_xy m_add Mx #5. New tags as above sq
+	_join_xy m_z Mx #6. zX; metas- persistent over undu
+	_join_xy m_ext Mx #7. extension
+	f_new="${Mx}"; }
+
+_conc_m_rm() { ## undu; concant m's; undu to base
+	# {m_pre.m_id}.{.m_z.m_ext} :
+	[ "${m_ext}" == "txt" ] && m_pre="x"
+	_join_xy m_id Mx "$m_pre"
+	_join_xy m_z Mx
+	_join_xy m_ext Mx
+	f_new="${Mx}"; }
+
+_conc_m_cp() { ## clone; concant m's; midpend cl
+	# {m_pre.m_id}.cl.{.m_z.m_ext} :
+	_join_xy m_id Mx "$m_pre" # m_id
+	_join_xy m_z Mx
+	_join_xy m_ext Mx
+	f_new="${Mx}"; }
+_rename() { mv -v "$PWD/$f" "$PWD/$f_new"; } # rename file w new meta
+_loop() { for i in $f_ls; do f="$i"; _load_m; $1; _rename; done; }
+
+
+# MACROS ###################################
+tg_add() { # tag; add tags to all files w id
+	m_pre="s"; f="$1"
+	_load_id
+	_read
+	_loop _conc_m_add ;}
+
+tg_rm() { # undu; remove all annotations
+	m_pre="A"; f="$1"
+	_load_id
+	_loop _conc_m_add ; }
+
+file_clone() { # clone
+	m_pre="A"; f="$1"
+	_load_m
+	cp "$PWD/$f" "$PWD/$f_new" ; }
+
+debug() { source $debug ; } # keep code tidy
+
+
+###########################################
+# MAIN ###################################
+main() {
+	case "$cmd" in # cases
+		tag.mk|tag.add) 	tg_add "$1" ;;
+		tag.rm|undu) 			tg_rm "$1" ;;
+		clone) 						file_clone "$1" ;;
+		debug) 						debug "$1" ;;
+	esac	
+}
+
+main "$@"
+

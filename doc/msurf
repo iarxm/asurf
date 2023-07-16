@@ -1,0 +1,89 @@
+# DOCUMENTATION: msurf functions
+# init
+
+# sd
+## _test_sd_exists
+1. TEST: glob "zm/sd.*" exists, 
+ 	a. TRUE: print 'SD DIR';
+ 	b. FALS: exit w code 1
+
+# _test_sd_fifo (older)
+1. Assing vars as inputted sd as absolute path
+2. TST: if input string exists, and whether forms a dir
+	a. TRU: src - set DCIM with inputted var
+ 	b. FAL: auto scan for SD pattern
+ 		- Exists: set as src..
+3. TST: Exit if no DCIM dir..
+4. Ouput src to fifo
+
+
+# MOVING SCRIPTS
+
+## _mv_sd
+### DESCRIPTION:BASICS:
+- Takes a sub dir in xds/. And an sd as zm/.. 
+- Copys files between them and then moves the src dirs as a backup version in sd/bk/..
+
+1. Test SD and import $src
+	b. Double check src is a dir
+2. rsync mv
+
+
+### NOTE
+ - Assign Vars: $1 as "zm/.." structure
+
+## _mv2client_x
+
+### DESCRIPTION:
+- Moves file to clients profile dir
+
+### STEPS:
+- 1. Takes a client dir; 2. Takes a file, Calc it's containing dir
+- 3 - Moves the file to the same containing dir name, to within the client dir
+- Using full pathnames as input for universality of the functions..
+- eg: dsmv client.x ~/xds/cj.ddb/dylan.craig dyl $PWD
+
+
+rsync -avP --delete-source $src $dst
+
+
+# MV SD X SCRIPT
+## _sd_all () { #1. main
+## META
+Automating all currently developed moving functions that are default
+- keep this a function so that the 'dst' variable can be changed easily as different cases potentially..
+
+## STEPS:
+1. Test SD exists and set $src
+2. Sort videos,preliminary, into dated dir's
+3. Move to xds
+4. Sync to cloud. 
+5. 2nd sync later will just be renaming after evaluating and tagging files.
+
+# SORTING
+## _sort_date_dir_root
+### BAICS:
+- Take a root dir with 'sub-dirs' of eg 'PANA..' to sort into 'dated dirs'
+- Uses sort_date_dir to sort each separate dir in ls
+- Which uses sort_date_file to sort each specific file within each specific subdir
+
+### STEPS:
+1. Check dirs exist
+2. ..
+
+### NOTES
+- IF pattern is limited to specific things, that pattern can be used as a way to regulate what gets sorted..
+- input is DCIM/ or ...
+- Can be made more efficient by sharing variables such as dir_i between other functions. At the moment to generalise I may be calculating components of names twice.
+- Currently using 'PANA' to limit to files within that dir, created by PANAsonic camera..
+
+2. Looping through dirs in '$src_ls'
+- i:1-7 for 7 days of week
+- Test: if any files left in dir
+	- TRUE: cd to parent and mv to trash
+
+# Date sorting
+## sort_date_file () {
+- TAKES ABSOLUTE FILE Path and converts into a folder with systematically dated dir
+
+

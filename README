@@ -1,0 +1,36 @@
+# asurf
+UNIX style uberfast surf sport analysis tool. The goal is ultra efficient sorting, annotating and distributing. Furthermore, tools for providing from the analysis, evaluations in the form of extra annotations and documents.
+
+The SUCKLESS design philosophy is considered. Current analysis systems appear to be in their essence, bloated over priced video annotators. Such things are simple, should be more efficient and streamlined.
+
+## Work In Progress
+I'm currently working to package up the components into a coherent whole. **asurf** currently runs with some tinkering of configuration files and if one knows where to each component. Stay tuned for the first release version.
+
+
+# DEPENDENCIES:
+```bash
+mpv
+```
+### OPTIONAL
+```bash
+i3 neovim nnn
+```
+
+# DESIGN PHILOSOPHY
+
+- Modularity
+
+# Roadmap
+- [] Clean up current scripts
+- [] Include configuration files: mpv; nnn; i3
+- [] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
+
+### Longer term
+- [] Convert to C code
+- [] Window container
+- [] Out of the box
+
+### Vision
+- [] Integration into ai models
+
+<!--- vim:ft=markdown

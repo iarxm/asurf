@@ -1,0 +1,43 @@
+#!/bin/env bash
+# vim:ft=sh
+_debugy() { # debug
+	Mx="abcd"
+	mt_y="xyz"
+	printf "join_xy:\n"
+	_join_xy mt_y Mx R
+	printf "%s \n" "$Mx"
+	
+	Mx="abcd"
+	#mt_y="xyz"
+	printf "join_M:\n"
+	_join_M mt_y
+	printf "%s \n" "$Mx"
+	exit
+}
+
+_debugx() { # debugx
+	#f_test=
+	./asurf tag.rm "$f_test"
+}
+
+_debug() { # tag; add tags to all files w id
+	m_pre="s" f="$1"
+	_f_load_id
+	_read
+	for i in $f_ls; do
+		f="$i"
+		_f_load_m
+		echo "m_add: $m_add"
+		echo "m_id: $m_id"
+		echo "m_s: $m_s"
+		echo "m_r: $m_r"
+		echo "m_n: $m_n"
+		echo "m_z: $m_z"
+		echo "m_z: $m_ext"
+		echo "f_new: $f_new"
+		_conc_m_add
+		echo "Mx: $Mx"
+		_f_mv
+	done
+}
+

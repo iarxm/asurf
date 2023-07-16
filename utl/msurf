@@ -1,0 +1,185 @@
+#!/bin/bash
+#
+# ============================================
+#
+# AUTHOR: Iarom Madden
+#
+# FILE PROCESSING/MOVING
+# - Retrieving from sd. Moving and sorting files into session and client dir's. Distributing via rclone
+#
+# FUNCTIONALITY:
+# 	- cp: sddcim -> wspace
+# 	- rc: wsapce -> cloud
+# 	- sd detection
+# 	- batch moves
+# 	- post move syncs/hooks
+# 	- auto sorting dirs; date; file size
+#		- push to remotes; distribution
+#
+# ================================================
+#
+# init vars
+declare psep="#########################"
+declare FIFO_DS="$HOME/.cache/fifo.dsmv" # TODO: setup fifo w formal code
+declare r="$HOME/xdsa" # root work tree
+
+# TODO: sep personal data into sep file; source that file from here; or use config file..
+declare sd_mntx="/home/iao/zm/zm"
+
+declare sd_mnt="$sd_mntx"
+declare regx_sd='/SD_.*|/sd\..*|/LUMIX'
+declare sd_i="" # sd path as arg
+declare sd_m="" # sd path auto matched
+declare sd_r="" # sd root as final sd var
+declare sd_dcim="" # dcim
+
+# for which func?
+#declare sd_bkp="$sd_r/bkp"
+#mkdir -p "$sd_bkp"
+#declare dst_i="$1"
+#declare sd_i="$2"
+#declare dst="$r/$dst_i"
+
+
+# funcs ######################################
+# print
+_prnt_c() 		{ printf "%s\n" "$1"; } # 'clean' print
+
+_prnt_b() 		{ printf "DSMV: %s\n" "$1"; }
+
+_prnt_h() 		{ printf "DSMV: %s\n" "$psep" "# $1" "$psep"; }
+
+_find_d()			{ find "$1" -mindepth 1 -maxdepth 1 -type d -exec realpath {} \; ;}
+
+_find_dgrp(){ _find_d "$1" | grep -E "$2"; }
+
+_prnp_bkls()  { _find_d "$sd_dcim"; } # move?
+
+_prnp_sd_abs(){ _find_dgrp "$sd_mnt" "$regx_sd"; }
+
+# exit
+_exit1() 			{ _prnt_b "exiting (code: 1)" && exit 1; }
+
+_exitx()			{ _prnt_b " " ; } #todo
+
+# macro's
+_assign_a2b()		{ [ -n "$2" ] && eval "${2}"="${!1}"; }
+
+_test_dir_exis() 	{ [ -d "${!2}" ] || { _prnt "no $1 match; return" && return; }; }
+
+_test_dir() { # if dir
+	_prnt_b					"checking: { $1 } for existence"
+	_test_dir_exis 	"$1" "$2"
+	_prnt_b 				"$1 match: $2"
+	_assign_a2b			"$2" "$3" ; }
+
+_test_dirx() { [ -n "$3" ] && _test_dir_x "$2" "$3" "$1"; }
+
+_rs() { _prnt_h "rsync: $1 ---> $2"; rsync -avP "$1" "$2" ; }
+
+_rc_syc() { src="$1"; dst="$2"; shift 2; rclone sync -vP "$@" --track-renames "$src" "$dst"; }
+
+_mv_loop() { while IFS= read -r line; do _prnt_b "$2 $line->$3/."; mv "$line" "$3/"; done <<< "$1"; }
+
+
+# sd_dcim ######################################
+_sd_test_i() {
+	sd_i="$(realpath "$HOME/$1")"
+	_test_dirx sd_i sd_r "sd root - as arg" ;} # manual input
+
+_sd_test_m() {
+	[ -d "sd_r" ] && return
+	sd_m="$(_prinp_sd_abs)"
+	_test_dirx sd_m sd_r "sd root - regx" ;} # regx auto test
+
+_sd_set_dcim_x() { # if 'src'; then print to fifo
+	sd_dcim_x="$sd_r/DCIM/"
+	_test_dirx sd_dcim_x sd_dcim "sd dcim"
+	[ -d "$sd_dcim" ] || _exit1 ;
+	_prnt_b "$sd_dcim: exists 'dcim -> fifo'"
+	_prnt_c "$sd_dcim" > "$FIFO_DS" ;}
+
+
+# sd meta ##########################################
+_sd_set_dcim() { #1. test sd exist set dcim loc
+	[ -d "$sd_dcim" ] && return # TODO: func which returns parent func? possible?
+	_sd_test_i
+	_sd_test_m
+	_sd_set_dcim_x ; }
+
+
+# sd_mv ######################################
+_sd_rs() 	{ _rs "$sd_dcim/" "$dst"; }
+
+_sd_bkp()	{ _mv_loop "$dcim_bkls" "$dcim_bkp" "sd_dcim bkp:"; }
+
+_sd_srt() { _sort_date_dir_root "$sd_dcim"; }
+
+_sd_mv () { # cp 'sd -> staging area' & mv -> sd/bkp
+	_sd_set_dcim
+	_sd_rs
+	_sd_bkp ;}
+
+# sd_meta #########################################
+_sd_all () { #1. main
+	_sd_set_dcim
+	#_sort_date_dir_root "$sd_dcim"
+	_sd_mv "$dst" "$sdi"
+	_syc_g1x
+}
+
+
+# SORTING: Client dirs ############################
+# TODO:
+_mv2client_init() { #
+	export dst_root=$1 	# client directory
+	export dst_root=$1 	# source
+	export client_pattern="S$2*"	; } # filename pattern
+
+_dirname_sesh() { dirname $src_file | sed 's,^\(.*/\)\?\([^/]*\),\2,'; }
+
+_client_ls=$(find $client_src_dir -name "*$pattern\.*") #-printf '%h\n'
+
+_mv2client_loop() { for i in $(_client_ls); do _mv2client_x $i $dst_root; done ; }
+
+_mv2client_x() { # session(y) -> client(x)
+	mkdir -p "$dst_dir"
+	prnt_b "$cl_file -> $cl_dir"
+	mv "$1" "$2/$(_sesh_dirname $1)/$(basename $1)" ;}
+
+
+_mv2client() {
+	_mv2client_init
+	_mv2client_loop ; }
+
+
+# sync ##########################################
+_syc_g1x () {
+	i="${1}" && shift 1
+	_prnt_h "clone sync to g1:"
+	_rc_syc "$r/$i" "g1:/xdsa/$i/" "$@"
+}
+
+## CASES ==============================
+_help() {
+	printf "TODO"
+}
+
+cmd="${1}" && [ -n "$cmd" ] && shift 1
+
+case $cmd in
+	test.sd.exists)		_test_sd_exists ;;
+	test.sd) 					_test_sd_fifo ;;
+	srt.dir.i) 				_sort_date_dir "$@" ;; # sort arg dir
+	srt.sd) 					_srt_sd "$1" ;;
+	sy.dvb) 					_syc_ext_dvb "$@" ;;
+	sy.y21) 					_syc_year "$@" ;;
+	help)							_help ;;
+	# MAIN
+	mv.sd)						_mv_sd_i  	"" "$@" ;;
+	client.x|cl) 			_mv_client_profile "$@" ;;
+	sy|sy.g|sy.g1) 		_syc_g1x "$@" ;;
+	sd.all)						_sd_all 	"" "$@";;
+esac
+
+

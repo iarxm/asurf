@@ -1,0 +1,5 @@
+#!/bin/env bash
+# set up testing environment
+p=$HOME/dsrc/asurf
+putil=$HOME/dsrc/asurf/utl
+export PATH="$p:$putil:$PATH"

@@ -1,0 +1,63 @@
+# DOCUMENTATION:
+## Update to the architecture. 
+- To make good use of variables and make the code more readable:
+	- assign global variables which functions assign values to
+	- assign functions to act on those global variables
+	- as i then iterate through a loop, all i have to do is assign the specific instance of 'x' to the global variable and then run the global macro/functions
+
+
+# tags
+## NOTE
+- Use $1 instead of $nnn for passing filename to functions. Will allow for greater future cross compatibility with other file managers..
+- Pass $nnn as argument to the script itself..
+
+# FUNCTIONS
+
+## _f_ext
+
+## _f_mt
+ - remove extension and unique id from filename string
+- Sname.Rrating.Nnotation .zX all as separate variables 
+	- better for manipulation..
+- note: go from tag_a to tags to create clarity in the flow of the code
+
+
+## f_id_load
+- DESCRIPTION: Load code and associated files
+1. Load file code (P12345..) as variable 
+	- and check is a camera file and exisits
+2. List all files associated with the unique file code
+	- ie screenshots, contact cards, note files, etc..
+	- usually distinct by the file extension..
+
+## _tg_add
+- LOAD: meta strings
+- INPUT: read meta tags; Contruct new meta string
+- Loop over each file associated with unique id
+	- extract base and ext
+	- add new tag meta info to middle
+	- construct new file name
+	- Rename file
+
+### _print_id_new
+- if id > 4 digits, cut to 4
+
+- Load code and associated files into memeory
+- Match the whole code of 4 to 7 digits in length
+
+# _f_clone
+- DUPLICATE MP4 file associated with unique id
+    - For clips with multiple waves/surfers
+	- Just for one file, to just clone the video
+	- TODO: a way of cutting the clip from mpv..?
+
+## DESCRIPTION:
+1. Load file code (P12345..) as variable 
+	- and check is a camera file and exisits
+2. List all files associated with the unique file code
+	- ie screenshots, contact cards, note files, etc..
+	- usually distinct by the file extension..
+
+
+
+<!--- vim:ft=markdown

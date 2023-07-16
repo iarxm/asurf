@@ -1,0 +1,14 @@
+#!/bin/sh
+# #################################
+# AUTHOR: IAROM MADDEN future@iarom.org
+
+# Centralise calling of various tools
+#
+# #################################
+cmd="$1" && shift 1
+
+case $cmd in
+	m) msurf $@ ;;
+	w) wsurf $@ ;;
+esac
+
