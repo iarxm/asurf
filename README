@@ -1,36 +1,48 @@
 # asurf
-UNIX style uberfast surf sport analysis tool. The goal is ultra efficient sorting, annotating and distributing. Furthermore, tools for providing from the analysis, evaluations in the form of extra annotations and documents.
+This is a performance sport analysis powertool. The goal is efficient retrieval, sorting, annotation, backups/version-control, and distribution. Furthermore, this involves a formal specification for a coaching workflow, in terms of the { observation -> analysis -> intervention -> repeat } cycle.
 
-The SUCKLESS design philosophy is considered. Current analysis systems appear to be in their essence, bloated over priced video annotators. Such things are simple, should be more efficient and streamlined.
+Furthermore, there will be tools introduced over time which will automate the technical evaluation process and provide a professional means of collaboration on goal setting and training trackers.
+
+Current analysis systems appear to be in their essence, bloated over priced video annotators. There also appears to be a lack of specification for how to structure the analysis data of clients.
+
+## 
+In particular, 'msurf' is used to import data from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. Rclone is used as a backend to interface with most commonly used cloud services in the background.
+
+A cli file manager is used in conjuction with a preview program 'uview' to rapidly sort through the clips of a session. In particular, 'uview' interfaces with mpv extended to work with 'flameshot' visual annotator and 'neovim' text editor. The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. Neovim can be used 
 
 ## Work In Progress
-I'm currently working to package up the components into a coherent whole. **asurf** currently runs with some tinkering of configuration files and if one knows where to each component. Stay tuned for the first release version.
+The components of **asurf** are being integrated into this centralised project. **asurf** currently runs through some tinkering of configuration files. The first release will be made once the program can be launched via a centralised cli program 'asurf'.
 
 
-# DEPENDENCIES:
+## Instalation
+#### DEPENDENCIES:
 ```bash
 mpv
 ```
-### OPTIONAL
+#### OPTIONAL
 ```bash
 i3 neovim nnn
 ```
+#### Install
+
 
 # DESIGN PHILOSOPHY
 
 - Modularity
 
-# Roadmap
-- [] Clean up current scripts
-- [] Include configuration files: mpv; nnn; i3
-- [] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
+## Roadmap
+- [ ] Clean up current scripts
+- [ ] Include configuration files: mpv; nnn; i3
+- [ ] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
 
 ### Longer term
-- [] Convert to C code
-- [] Window container
-- [] Out of the box
+- [ ] Convert to C code
+- [ ] Window container
+- [ ] Out of the box
 
 ### Vision
-- [] Integration into ai models
+- [ ] Interface with a database system
+- [ ] Integrate into an ai cv and llm models
+- [ ] gamification of athlete development
 
 <!--- vim:ft=markdown
