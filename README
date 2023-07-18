@@ -1,14 +1,25 @@
 # asurf
-This is a performance sport analysis powertool. The goal is efficient retrieval, sorting, annotation, backups/version-control, and distribution. Furthermore, this involves a formal specification for a coaching workflow, in terms of the { observation -> analysis -> intervention -> repeat } cycle.
+A powertool for sport analysis. The goal is rapid retrieval, sorting, analysis annotation and multi pane comparisons, backups/version-control, and distribution. Furthermore, this project involves a formal specification for a coaching workflow, in terms of cycles such as: { observation -> analysis -> intervention -> repeat }. In particular, specifying systems of naming, storing and processing analysis data, and structuring evaluation data and documents.
 
-Furthermore, there will be tools introduced over time which will automate the technical evaluation process and provide a professional means of collaboration on goal setting and training trackers.
+Furthermore, there will be tools introduced over time which will automate the technical evaluation process and provide a professional means of collaboration on goal setting and training trackers. Tools such as latex and pandoc will be used to swiftly convert from analysis notes in markdown to publish documents as pdf's or html pages.
 
-Current analysis systems appear to be in their essence, bloated over priced video annotators. There also appears to be a lack of specification for how to structure the analysis data of clients.
+## The problem
+Current analysis systems appear to be in their essence, bloated, proprietary, and over priced video annotators. There also appears to be a lack of specification for how to process and store the analysis data of clients.
 
-## 
-In particular, 'msurf' is used to import data from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. Rclone is used as a backend to interface with most commonly used cloud services in the background.
+In terms of the bare fundamentals of functionality, what is required is the ability to rapidly view videos and associated data, generate analysis data in the form of written and visual annotations, process this into evaluations and immediately distribute. Furthermore to be able to collaborate effectively.
 
-A cli file manager is used in conjuction with a preview program 'uview' to rapidly sort through the clips of a session. In particular, 'uview' interfaces with mpv extended to work with 'flameshot' visual annotator and 'neovim' text editor. The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. Neovim can be used 
+## The solution
+This project works from cli tools and generally adopts the idea of 'everything as s file' approach. This enables powerful UNIX tools to be adopted such as neovim, mpv, rclone, rsync, restic/borg, git, bash, and a cli file manager (such as nnn, ranger or lf), to name a few.
+
+## Tools
+### msurf
+'msurf' is used to import data from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. **msurf** uses rclone as a backend for distribution, to interface in the background with most commonly used cloud services.
+
+### uview
+A cli file manager is used in conjuction with a preview program 'uview' to rapidly sort through the clips of a session. In particular, 'uview' interfaces with mpv. Mpv is configured and extended for frame by frame analysis via vim like binds, and lua extensions to utilise 'flameshot' as a visual annotator and 'neovim' as a longer form text annotator. 
+
+### anotr
+The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. Neovim can be used 
 
 ## Work In Progress
 The components of **asurf** are being integrated into this centralised project. **asurf** currently runs through some tinkering of configuration files. The first release will be made once the program can be launched via a centralised cli program 'asurf'.
@@ -27,6 +38,8 @@ i3 neovim nnn
 
 
 # DESIGN PHILOSOPHY
+
+- SUCKLESS philosophy
 
 - Modularity
 
