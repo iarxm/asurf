@@ -1,0 +1,22 @@
+#!/bin/bash
+# fix focus stealing windows in i3 - tabbed preview activity
+# is this in i3s now?
+
+focus_fixer() {
+	class="$1"
+
+	wid_x=$(xdotool search --class "$class")
+	
+	echo "$wid_x"
+
+	[ ! -n "$wid_x" ] && exit
+
+	testx=$(i3scratch | grep "$class")
+
+	[ -n "$testx" ] \
+		&& xdotool windowactivate --sync "${wid_x}" \
+		|| i3-msg '[class="^'"$class"'$"] scratchpad show'
+}
+
+focus_fixer "$1"
+
