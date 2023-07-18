@@ -24,8 +24,15 @@ This project works via cli tools and generally adopts the idea of 'everything as
 A cli file manager is used in conjuction with a preview program 'uview' to rapidly sort through the clips of a session. In particular, 'uview' interfaces with mpv. Mpv is configured and extended for frame by frame analysis via vim like binds, and lua extensions to utilise 'flameshot' as a visual annotator and 'neovim' as a longer form text annotator. 
 
 ### anotr
-The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. Neovim can be used 
+The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. This serves as an initial analysis and can be immediately disributed to the athletes by the time the session is finished. The other tools can then be utilised to provide greater depth of analysis. 
 
+Neovim for in depth written annotations and flameshot for visual annotations on the fly. Bindings can be setup to also smoothly import frames into programs such as Gimp.
+
+### wconf
+'wconf' is utilised to automatically open programs in specific window and workspace configurations for various workflows.
+
+### more
+Refer to my backup program for an efficient indepth solution to backups. When we frame sport analysis as a form of data science, the number 1 priority then becomes data security.
 
 ## Instalation
 #### DEPENDENCIES:
