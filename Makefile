@@ -1,6 +1,6 @@
 PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
-TOOLS=$(utl/*)
+TOOLS=$(wildcard utl/*)
 
 all:
 	@echo "Run 'make install' to install the scripts."
