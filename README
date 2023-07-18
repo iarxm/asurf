@@ -44,8 +44,8 @@ i3 neovim nnn
 - Modularity
 
 ## Roadmap
-- [ ] Clean up current scripts
-- [ ] Include configuration files: mpv; nnn; i3
+- [ ] Clean up current scripts and integrate
+- [ ] Centralise related configuration files: mpv; nnn; i3
 - [ ] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
 
 ### Longer term
@@ -55,7 +55,7 @@ i3 neovim nnn
 
 ### Vision
 - [ ] Interface with a database system
-- [ ] Integrate into an ai cv and llm models
+- [ ] Integrate into ai cv and llm models
 - [ ] gamification of athlete development
 
 <!--- vim:ft=markdown
