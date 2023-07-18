@@ -1,4 +1,4 @@
-# GENERAL
+# general
 ## Universality
 - Restructure functions so they are more self containted
 	- Easier readabilitiy
@@ -9,19 +9,13 @@
 
 # anotr
 
-## TODO: UPDATE THIS TO UNIVERSAL COMPATIBILITY
-## TODO
-- Rather than including a 'tag_note' just 
-- Add the note to the end of the 'tag-rating' dialog?
-	- No, keep tag_note
- - Notes will eventually be replaced by an actual file with notes, 
- 	- referencing to the P.. id
- 	- In progress
-
-## TODO:
-- future - create directories for input if there not made already
+## TODO: 
+- UPDATE THIS TO UNIVERSAL COMPATIBILITY?
+- Rather than including a 'tag_note' just add the note to the end of the 'tag-rating' dialog? No, keep tag_note
+- Notes will eventually be replaced by an actual file with notes referencing to the P.. id; In progress
 - And possibly use single letter abbreviations for full name folders..
 - And create if cases for use with contact sheet files, where if the file is a contact sheet, the operations are on both the contact sheet and the file..
+
 
 # tags
 ## TODO
@@ -36,22 +30,24 @@
 
 # msurf
 
-## TIER1:
+## TODO:
+### TIER1:
 - COLOR: Add color to printf funcs. Create visual diff between eg rsync output and bash script outp.
 - SORT: Read input to name the dir when sorting by am/pm
 	- String reads, eg: 'level' 'location' 'etc', similar to tagging func
 - Add a way to save all output to a second stream that goes into a log file..
 	- So i can see what's occuring when a run of the script returns errors or unexpected results.
+- future - create directories for input if they're not made already
 
-## TIER2:	
+### TIER2:	
 	- Make all contained functions functional
 	- Publish scripts to public via github
 	- Complete all sub- todo sections witin each function
 
-## init
+### init
 - improving the regexp on 'init' - to only match sd cards ..
 
-## moving scripts
+### moving scripts
 - create a 'cp' variant. 
 - and an option to choose an sd when sd card label not in pattern
 - remove sd_a and sd constructions??
@@ -62,12 +58,7 @@
 	- Are loops required for 'mv' and 'rsync' commands??
 - Remove fifo and 'src' definitions??
 
-## TODO:
-- Turn sd_a evaluation into a conditional test..
-- Only set it if it exisits..
-- Rather than nesting two tests in the first 'if'..
-
-## sorting
+### sorting
 - Generalise to absolute filepaths so the sort functions are generalised and can be easily utilised within other use cases.
 - make it applicable to context..
 	- sd cards, 
@@ -77,11 +68,16 @@
 	- add option to add suffix to dir name...	
 		- IE for session metaday (loc.level.. etc)
 
-## _mv2client
+### _mv2client
 - RYSNC OR MV?
 	- rsync copies and removes
 	- mv renames if on same filesystem
 	- which is better option in most cases..
+
+## xTODO:sd
+x- Turn sd_a evaluation into a conditional test.. 
+x- Only set it if it exisits.. 
+x- Rather than nesting two tests in the first 'if'..
 
 
 <!--- vim: ft=markdown

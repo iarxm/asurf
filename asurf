@@ -1,14 +1,19 @@
 #!/bin/sh
+#
 # #################################
 # AUTHOR: IAROM MADDEN future@iarom.org
-
+#
 # Centralise calling of various tools
 #
 # #################################
+# init
 cmd="$1" && shift 1
 
+# cmd #############################
+
 case $cmd in
-	m) msurf $@ ;;
-	w) wsurf $@ ;;
+  m) msurf $@ ;;
+  w) wsurf $@ ;;
+  *) nnn ;;
 esac
 
