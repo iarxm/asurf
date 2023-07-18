@@ -3,41 +3,42 @@
 # AUTHOR: IAROM MADDEN
 # ########################################################
 # init
-	fifox="$1"
-	
-	pcache=$HOME/.cache/preview
-	log_x="$pcache/tbd.log"
-	cache_tt_switch="$pcache/cache.tt.switch"
-	cache_f_curr="$pcache/cache.f_curr"
+fifox="$1"
 
-	XDOTOOL_TIMEOUT="0.5"
-	t_lim="0.4"
-	t1="100000"
-		
-	pid_view=""
-	pid_tabd=""
-	xid_main=""
-	xid=""
-	f_curr=""
-	f_last=""
-	mime_curr=""
-	mime_last=""
-	
-	echo "y" > "$cache_tt_switch"
+pcache=$HOME/.cache/preview
+log_x="$pcache/tbd.log"
+cache_tt_switch="$pcache/cache.tt.switch"
+cache_f_curr="$pcache/cache.f_curr"
 
-# init prg
-	pager=${PAGER:-"vim -R"}
-	nuke="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/nuke"
-	# term
-	if which st >/dev/null 2>&1 ; then
-		term="st -c preview -w"
- 	elif which urxvt >/dev/null 2>&1 ; then
-    term="urxvt -embed"
-	elif which xterm >/dev/null 2>&1 ; then
-    term="xterm -into"
-	else
-    echo "No xembed term found" >&2
-	fi # nuke: # $1 -> $XID, $2 -> $f_curr
+XDOTOOL_TIMEOUT="0.5"
+t_lim="0.4"
+t1="100000"
+	
+pid_view=""
+pid_tabd=""
+xid_main=""
+xid=""
+f_curr=""
+f_last=""
+mime_curr=""
+mime_last=""
+
+echo "y" > "$cache_tt_switch"
+
+init prg
+pager=${PAGER:-"vim -R"}
+nuke="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/nuke"
+
+# term
+if which st >/dev/null 2>&1 ; then
+	term="st -c preview -w"
+elif which urxvt >/dev/null 2>&1 ; then
+  term="urxvt -embed"
+elif which xterm >/dev/null 2>&1 ; then
+  term="xterm -into"
+else
+  echo "No xembed term found" >&2
+fi # nuke: # $1 -> $XID, $2 -> $f_curr
 
 # window and viewers - set
 _get_main_win() 		{ main_win="$(xdotool getactivewindow)" ; }
@@ -100,46 +101,6 @@ _mpv_socx() { # socket mpv
 
 _mpvx() { _mpv_socx; }
 
-_p_tabbed_start () { # start tabbed
-		fifoy="$(mktemp -u)"
-    mkfifo "$fifoy"
-   	tabbed -n preview > "$fifoy" &
-    	
-		jobs # clear 'completed'
-   	pid_tabd="$(jobs -p %%)"
- 		SOCKET="${MPV_SOCKET:-/tmp/mpvsocket.$pid_tabd}"
-    
-		[ -z "$pid_tabd" ] && { echo "Can't start tabbed"; exit 1; }
-		read -r xid < "$fifoy" && rm "$fifoy"
-		
-		i3-msg 'no_focus [id="$xid"]' # i3 props
-    i3-msg 'for_window [id="$xid"] border 2px'
-    i3-msg 'for_window [instance="preview"] border 2px'
-}
-
-_kill_viewer () { # viewer
-	# if last was vid: { cur is vid -> return || pause vid cur }
-	is_vid_last=$(_v_test "$mime_last")
-	is_vid_curr=$(_v_test "$mime_curr")
-	
-	pid_mpv=$(pgrep -f "mpv .*$SOCKET")
-
-	if [ -n "$is_vid_last"  ]; then
-			[ -n "$is_vid_curr" ] && return
-			kill "$pid_mpv"
-	fi
-
-  if [ -n "$pid_view" ] && jobs -p | grep "$pid_view"; then
-		kill "$pid_view"
-	fi 
-}
-
-sigint_kill () {
-	kill_viewer
-	kill "$pid_tabd"
-	exit 0 ; }
-
-
 _mime_handlers() {
 	if which mpv >/dev/null 2>&1 ; then
 		media() { _mpvx; }
@@ -173,9 +134,46 @@ _mime_switch() { # mime switches
 		*) all ;;
 	esac ;}
 
+_p_tabbed_start () { # start tabbed
+		fifoy="$(mktemp -u)"
+    mkfifo "$fifoy"
+   	tabbed -n preview > "$fifoy" &
+    	
+		jobs # clear 'completed'
+   	pid_tabd="$(jobs -p %%)"
+ 		SOCKET="${MPV_SOCKET:-/tmp/mpvsocket.$pid_tabd}"
+    
+		[ -z "$pid_tabd" ] && { echo "Can't start tabbed"; exit 1; }
+		read -r xid < "$fifoy" && rm "$fifoy"
+		
+		i3-msg 'no_focus [id="$xid"]' # i3 props
+    i3-msg 'for_window [id="$xid"] border 2px'
+    i3-msg 'for_window [instance="preview"] border 2px' ;}
+
+_kill_viewer () { # viewer
+	# if last was vid: { cur is vid -> return || pause vid cur }
+	is_vid_last=$(_v_test "$mime_last")
+	is_vid_curr=$(_v_test "$mime_curr")
+	
+	pid_mpv=$(pgrep -f "mpv .*$SOCKET")
+
+	if [ -n "$is_vid_last"  ]; then
+			[ -n "$is_vid_curr" ] && return
+			kill "$pid_mpv"
+	fi
+
+  if [ -n "$pid_view" ] && jobs -p | grep "$pid_view"; then
+		kill "$pid_view"
+	fi ;}
+
+sigint_kill () {
+	kill_viewer
+	kill "$pid_tabd"
+	exit 0 ; }
+
 _tt_off() { echo "n" > "$cache_tt_switch"; }
 
-_tt_on() { echo "y" > "$cache_tt_switch"; }
+_tt_on()  { echo "y" > "$cache_tt_switch"; }
 
 _timer() { # Monitor t delta of f_currs
 	f_start="${f_curr}" # - if t delta > t_lim : 'y' otherwise : 'n'
