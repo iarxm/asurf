@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
+
 # ######################################################
 # AUTHOR: IAROM MADDEN
 # ########################################################
+
 # init
+
 fifox="$1"
 
-pcache=$HOME/.cache/preview
-log_x="$pcache/tbd.log"
+{ [ ! -n "$fifox" ] && [ -f "$NNN_FIFO" ]; } || fifox="$NNN_FIFO"
+
+pcache="$HOME/.cache/asurf"
+mkdir -p "$pcache"
+log_x="$pcache/uview.log"
 cache_tt_switch="$pcache/cache.tt.switch"
 cache_f_curr="$pcache/cache.f_curr"
 
-XDOTOOL_TIMEOUT="0.5"
-t_lim="0.4"
+t_lim_xdot="0.5"
+t_lim="0.1"
 t1="100000"
 	
 pid_view=""
@@ -23,41 +29,32 @@ f_last=""
 mime_curr=""
 mime_last=""
 
-echo "y" > "$cache_tt_switch"
+# print ########################################
+_prnt()             { printf "%s \n" "$@"; }
 
-init prg
-pager=${PAGER:-"vim -R"}
-nuke="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/nuke"
+_prnt_mime()        { file -bL --mime-type "${1}"; }
 
-# term
-if which st >/dev/null 2>&1 ; then
-	term="st -c preview -w"
-elif which urxvt >/dev/null 2>&1 ; then
-  term="urxvt -embed"
-elif which xterm >/dev/null 2>&1 ; then
-  term="xterm -into"
-else
-  echo "No xembed term found" >&2
-fi # nuke: # $1 -> $XID, $2 -> $f_curr
+_prnt_swit()        { cat "$cache_tt_switch"; }
 
-# window and viewers - set
+_prnt_f_cache()     { cat "$cache_f_curr"; }
+
+debugx()            { _prnt "$1" >> "$log_x" ; }
+
+# set #########################################
+
+_set_cache_f_curr() { _prnt "$f_curr" > "$cache_f_curr"; }
+
+_set_mime_curr()    { mime_curr=$(_prnt_mime "${f_curr}"); }
+
+_set_mime_last()    { mime_last="${mime_curr}"; }
+
+_prnt "y" > "$cache_tt_switch"
+
+
+# window/viewers/jobs ########################################
 _get_main_win() 		{ main_win="$(xdotool getactivewindow)" ; }
 
 _get_viewer_pid () 	{ pid_view="$(jobs -p %%)"; }
-
-_kill_tabbed()			{ kill "$pid_tabd"; }
-
-_kill_jobs() 				{ rm "$SOCKET"; disown; }
-
-_v_test() 					{ printf "%s" "$1" | grep -e "video" -e "image"; }
-
-_test_fifo() { [ ! -r "$fifox" ] && { echo "\$fifox read fail ('$fifox')"; exit 1; }; }
-
-_debugx() 					{ echo "$1" >> "$log_x" ; }
-
-_p_term_nuke () 		{ $TERMINAL "$1" -e "$nuke" "$2" & }
-
-term_nuke() 				{ _p_term_nuke "$1" "$2"; }
 
 _win_foc_brute() 		{ _window_foc_brutex; } # unused?
 
@@ -68,12 +65,47 @@ _win_foc() {
 	if [ $((xid_active == xid)) -ne 0 ] ; then
 		xdotool windowactivate "$main_win"
 		else
-			timeout "$XDOTOOL_TIMEOUT" xdotool behave "$xid" focus windowactivate "$main_win" &
+			timeout "$t_lim_xdot" xdotool behave "$xid" focus windowactivate "$main_win" &
 	fi
 }
 
+_kill_tabbed()			{ kill "$pid_tabd"; }
+
+_kill_jobs() 				{ rm "$SOCKET"; disown; }
+
+
+# tests
+
+_mime_test_media() 	{ _prnt "$1" | grep -e "video" -e "image" -e "audio" ; }
+
+_mime_test_vim() 		{ _prnt "$1" | grep -e "text" -e "inode/directory" ; }
+
+_mime_test_doc() 		{ _prnt "$1" | grep -e "application/pdf" ; } #todo: epubs..
+
+_test_fifo()        { [ ! -r "$fifox" ] && { echo "\$fifox read fail ('$fifox')"; exit 1; }; }
+
+# mime/progs ###################################################
+
+# term
+
+if which st >/dev/null 2>&1 ; then
+	term="st -c preview -w"
+elif which urxvt >/dev/null 2>&1 ; then
+  term="urxvt -embed"
+elif which xterm >/dev/null 2>&1 ; then
+  term="xterm -into"
+else
+  echo "No xembed term found" >&2
+fi # nuke: # $1 -> $XID, $2 -> $f_curr
+
+pager=${PAGER:-"nvim -R"}
+nuke="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/plugins/nuke"
+_term_nuke ()  { $term "$1" -e "$nuke" "$2" & }
+
+
+# mpv
+
 _mpv_xa() {
-	
 	mpv \
 		--input-ipc-server="${SOCKET}" \
 		--wid="$xid" \
@@ -83,56 +115,90 @@ _mpv_xa() {
 
 _mpvc_add() { printf '%s\n' "{ \"command\": [\"loadfile\", \"$f_curr\", \"replace\" ] }" | socat - "${SOCKET}" &> /dev/null; }
 
-#_mpvc_add() { echo "$(_mpvc_add_p)" | socat - "${SOCKET}" &> /dev/null; }
-
-mpvc_add() {
-	to_send=$( printf '%s\n' "{ \"command\": [\"loadfile\", \"$f_curr\", \"replace\" ] }")
-			# \"\\\"$f_curr\\\"\"
-	echo "${to_send}" | socat - "${SOCKET}" &> /dev/null
-}
-
 _mpv_socx() { # socket mpv
-	[ "$(cat "$cache_tt_switch")" = "n" ] && return
+	[ -eq "$(_prnt_swit)" = "n" ] && return
 
 	{ [ -n "$(pgrep -f "mpv .*$SOCKET")" ] \
 		|| { _mpv_xa; return; } \
 		;} && _mpvc_add 
 }
 
-_mpvx() { _mpv_socx; }
+_mpvx()       { _mpv_socx; }
+
+
+# nvim #######################################
+
+nvim_serv="$fifox.nvim.server.pipe"
+
+_prnt_pid_nvim()  { pgrep -f "nvim --listen ${nvim_serv}"; }
+
+_nvim_start()     { $term "$xid" -e nvim --listen "${nvim_serv}" & }
+
+_nvim_send() { 
+  case $mime_curr in
+    text/*)           ncmd=":view ${f_curr}<CR>" ;;
+    inode/directory)  ncmd=":view ${f_curr}/<CR>" ;;
+  esac
+  nvim --server "${nvim_serv}" --remote-send "$ncmd" & }
+
+_nvimx() {
+  pid_nvim="$(_prnt_pid_nvim)"
+  { [ -n "${pid_nvim}" ] && _nvim_send; } \
+    || { _nvim_start; sleep 0.1; _nvim_send; }; }
+
+# zath #########################################
+_zathx() {
+  [ "$(_prnt_swit)" = "n" ] && return
+  zathura.dbus "$f_curr" "$xid" & }
+
+# mime handling #############################
 
 _mime_handlers() {
-	if which mpv >/dev/null 2>&1 ; then
+
+  if which mpv >/dev/null 2>&1 ; then # media
 		media() { _mpvx; }
   else
-		media() { term_nuke "$xid" "$f_curr"; }
+		media() { _term_nuke "$xid" "$f_curr"; }
 	fi
-		
- 	if which zathura >/dev/null 2>&1 ; then
-		doc() { zathura -e "$xid" "$f_curr" & }
+	
+ 	if which zathura >/dev/null 2>&1 ; then # doc
+		doc() { _zathx; }
+    #doc() { zathura -e "$xid" "$f_curr" & }
  	else
-		doc() { term_nuke "$xid" "$f_curr"; }
+		doc() { _term_nuke "$xid" "$f_curr"; }
  	fi
- 	
-	if [ -x "$nuke" ] ; then
-		txtp() 	{ term_nuke "$xid" "$f_curr"; }
-		all() 	{ term_nuke "$xid" "$f_curr"; }
- 	else # shellcheck disable=SC2086
+  
+  if which nvim >/dev/null 2>&1 ; then # txt
+    txtp()    { _nvimx; }
+    inodev()  { _nvimx; }
+  else
  	 	txtp() 	{ $term "$xid" -e $pager "$f_curr" & }
-		all() 	{ $TERMINAL "$xid" -e sh -c "f_curr '$f_curr' | $pager -" & }
- 	fi
+  fi
+  
+  # other
+	if [ -x "$nuke" ] ; then # other
+		all() 	{ _term_nuke "$xid" "$f_curr"; }
+ 	else # shellcheck disable=SC2086
+		all() 	{ $term "$xid" -e sh -c "echo '$f_curr' | $pager -" & }
+ 	fi 
 }
 
 _mime_switch() { # mime switches
+	debugx "$(_prnt_swit)"
+  [ n = $(_prnt_swit) ] && return
+
 	case "$mime_curr" in
 		video/*) media ;;
 		audio/*) media ;;
  		image/*) media ;;
 		application/pdf) doc ;;
- 	 	inode/directory) $TERMINAL "$xid" -e nnn "$f_curr" & ;;
+ 	 	inode/directory) inodev ;;
  	 	text/*) txtp ;;
-		*) all ;;
+		#*) all ;;
 	esac ;}
+
+
+# tabbed/viewers #######################################
 
 _p_tabbed_start () { # start tabbed
 		fifoy="$(mktemp -u)"
@@ -150,96 +216,129 @@ _p_tabbed_start () { # start tabbed
     i3-msg 'for_window [id="$xid"] border 2px'
     i3-msg 'for_window [instance="preview"] border 2px' ;}
 
-_kill_viewer () { # viewer
-	# if last was vid: { cur is vid -> return || pause vid cur }
-	is_vid_last=$(_v_test "$mime_last")
-	is_vid_curr=$(_v_test "$mime_curr")
+_prnt_pid_mpv() { pgrep -f "mpv .*$SOCKET"; }
+
+_kill_viewer_pid() { if [ -n "$pid_view" ] && jobs -p | grep "$pid_view"; then kill "$pid_view"; fi; }
+
+_kill_nvim() { 
+  pid_nvim="$(_prnt_pid_nvim)"
+  [ -n "$pid_nvim" ] || return
+  for i in $pid_nvim; do kill "$i"; done; }
+
+_kill_viewer() { # viewer
+  # if last was vid/txt/node: { curm = lastm -> return || otherwise kill }
+	is_last_media=$(_mime_test_media "$mime_last")
+	is_curr_media=$(_mime_test_media "$mime_curr")
+	is_last_vim=$(_mime_test_vim "$mime_last")
+  is_curr_vim=$(_mime_test_vim "$mime_curr")
+  is_last_doc=$(_mime_test_doc "$mime_last")
+  is_curr_doc=$(_mime_test_doc "$mime_curr")
+  [ -n "$is_last_media"  ] && [ -n "$is_curr_media" ] && return
+  [ -n "$is_last_vim"  ] && [ -n "$is_curr_vim" ] && return
+  [ -n "$is_last_doc"  ] && [ -n "$is_curr_doc" ] && return
+  _kill_nvim 
+  _kill_viewer_pid
+	pid_mpv="$(_prnt_pid_mpv)"
+  [ -n "pid_mpv" ] && kill "$pid_mpv" ; }
+
+_sigint_kill () { kill_viewer; kill "$pid_tabd"; exit 0 ; }
+
+_tt_sw()  { _prnt "$1" > "$cache_tt_switch"; }
+
+
+_timer() {
+  f_start="${f_curr}"
+  _tt_sw "n"
+  sleep "$t_lim" #;}
+  f_upd="$(_prnt_f_cache)"
+  debugx "$f_start = $f_upd"
+  [ $f_start = $f_upd ] && _tt_sw "y" && return ;}
 	
-	pid_mpv=$(pgrep -f "mpv .*$SOCKET")
 
-	if [ -n "$is_vid_last"  ]; then
-			[ -n "$is_vid_curr" ] && return
-			kill "$pid_mpv"
-	fi
+# body ########################################################
 
-  if [ -n "$pid_view" ] && jobs -p | grep "$pid_view"; then
-		kill "$pid_view"
-	fi ;}
+# init
 
-sigint_kill () {
-	kill_viewer
-	kill "$pid_tabd"
-	exit 0 ; }
-
-_tt_off() { echo "n" > "$cache_tt_switch"; }
-
-_tt_on()  { echo "y" > "$cache_tt_switch"; }
-
-_timer() { # Monitor t delta of f_currs
-	f_start="${f_curr}" # - if t delta > t_lim : 'y' otherwise : 'n'
-	sleep $t_lim
-	s_last=$(cat "$cache_tt_switch")
-	f_upd=$(cat "$cache_f_curr")
-	[ ! "$f_start" = "$f_upd" ] && { _tt_off && return; }
-	_tt_on
-	[ "$s_last" = "n" ] && _mime_vv ; }
-
-
-# init ########################################################
-_init_tabbed() {
-	_get_main_win
-	_p_tabbed_start
-	_foc_main_win ;}
-
-_init_main() {
-	unset -v fifox
+_main_init() {
+  # init sigs
+  unset -v fifox
   exec >/dev/null 2>&1  # mute from now
 	trap sigint_kill SIGINT
-	_init_tabbed 
+
+  # init tabbed
+  _get_main_win
+	_p_tabbed_start
+	_foc_main_win
+
+  # init handles
 	_mime_handlers ;}
 
-_init_loop_file() {
+
+_loop_init() { # init new file arg
 	[ ! -e "$f_curr" ] && continue
-	echo "$f_curr" > "$cache_f_curr"
-	mime_curr="$(file -bL --mime-type "${f_curr}")" ;}
+  _set_cache_f_curr
+  _set_mime_curr # set $mime_curr
+ 
+  jobs && if ! jobs | grep tabbed ; then break; fi ; }
 
-_init_loop_jobs() { jobs && if ! jobs | grep tabbed ; then break; fi ;}
 
-_init_loop() { 
-	_init_loop_file
-	_init_loop_jobs ;}
+# view
+
+_loop_view() {
+  
+	_kill_viewer
+	_mime_switch 
+  _timer & }
+
+
+# close
 
 _loop_close() {
-	mime_last="${mime_curr}" # meme of last f_curr
+  _set_mime_last # set $mime_last
 	_get_viewer_pid
 	_win_foc ;}
-   
-_fifo_loop() { # master looper begin
-	while read -r f_curr ; do #f_currX=$f_curr_PREVIOUS
-		_init_loop
 
-		_timer "${f_curr}" &
-		_kill_viewer
-		_mime_switch
-		
-		_loop_close
-				
-	done ;}
 
-_clean() { # clean
+_main_close() { # clean
   _kill_viewer
 	_kill_tabbed
 	_kill_jobs; }
 
-main () {
-	_init_main
-	_fifo_loop
-	_clean
+
+# main #######################################################
+
+_main () {
+	_main_init
+  
+  while read -r f_curr ; do #f_currX=$f_curr_PREVIOUS
+	_loop_init
+	_loop_view
+	_loop_close
+	done
+
+	_main_close
 }
 
 # RUN
 
 _test_fifo
+_main < "$fifox" &
 
-main < "$fifox" &
+
+
+# ARCHIVE ###################################
+_timer_x() {
+  sleep 1
+  [ "$f_upd" = "$f_curr" ] \
+    && [ "$(cat "$cache_tt_switch")" = "n" ] \
+    && _tt_sw "y" && _mime_switch ;}
+
+_timerz() { # Monitor t delta of f_currs
+	f_start="${f_curr}" # - if t delta > t_lim : 'y' otherwise : 'n'
+	sleep $t_lim
+	f_upd="${f_curr}"
+	
+  [ ! "$f_start" = "$f_upd" ] || { _tt_sw "n"; _timer_x; return; }
+    
+  _tt_sw "y" ;}
 
