@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # ============================================
 #
 # AUTHOR: Iarom Madden
@@ -17,90 +17,115 @@
 #   - push to remotes; distribution
 #
 # ================================================
-#
-# init vars
-psep="#########################"
-FIFO_DS="$HOME/.cache/fifo.dsmv" # TODO: setup fifo w formal code
-r="$HOME/xdsa" # root work tree
 
-# TODO: sep personal data into sep file; source that file from here; or use config file..
+
+# init cfg
+
+rx="$HOME/xdsa" # root work tree
+regx_sdx='/SD_.*|/sd\..*|/LUMIX'
 sd_mntx="/home/iao/zm/zm"
 
+
+# init univ ##########################################
+
+psep="#########################"
+prefix="MSURF"
+fifo_ds="$XDG_CACHE_HOME/asurf/fifo.dsmv" # TODO: setup fifo w formal code
+regx_sd="$regx_sdx"
 sd_mnt="$sd_mntx"
-regx_sd='/SD_.*|/sd\..*|/LUMIX'
+
+# sd / imp
 sd_i="" # sd path as arg
 sd_m="" # sd path auto matched
 sd_r="" # sd root as final sd var
 sd_dcim="" # dcim
+sd_bkp=""
 
-# for which func?
-#declare sd_bkp="$sd_r/bkp"
-#mkdir -p "$sd_bkp"
-#declare dst_i="$1"
-#declare sd_i="$2"
-#declare dst="$r/$dst_i"
+# workspace
+r="$rx" # root work tree
+dst_i="" # inputed sub dir
+dst=""  # dst full path
 
+  
 
 # funcs ######################################
 # print
+
+
+_prnt_ln()    { printf "%s\n" " "; } # empty line
+
 _prnt_c()     { printf "%s\n" "$1"; } # 'clean' print
 
-_prnt_b()     { printf "DSMV: %s\n" "$1"; }
+_prnt_b()     { printf "$prefix: %s\n" "$1"; }
 
-_prnt_h()     { printf "DSMV: %s\n" "$psep" "# $1" "$psep"; }
+_prnt_h()     { printf "$prefix: %s\n" "$psep" "# $1" "$psep"; }
 
 _find_d()     { find "$1" -mindepth 1 -maxdepth 1 -type d -exec realpath {} \; ;}
 
-_find_dgrp()  { _find_d "$1" | grep -E "$2"; }
+_find_d_grp() { _find_d "$1" | grep -E "$2"; }
 
 _prnp_bkls()  { _find_d "$sd_dcim"; } # move?
 
-_prnp_sd_abs(){ _find_dgrp "$sd_mnt" "$regx_sd"; }
+_prnp_sd_abs(){ _find_d_grp "$sd_mnt/" "$regx_sd"; } # '../' is required
 
-# exit
+
+# exit #########################################
+
 _exit1()      { _prnt_b "exiting (code: 1)" && exit 1; }
 
 _exitx()      { _prnt_b " " ; } #todo
 
-# macro's
+
+# ops / test #######################################
+
 _assign_a2b()     { [ -n "$2" ] && eval "${2}"="${!1}"; }
 
-_test_dir_exis()  { [ -d "${!2}" ] || { _prnt "no $1 match; return" && return; }; }
+_test_dir_exis()  { [ -d "${!1}" ] || { _prnt_b "no { $2 } match; return" && return 1; }; }
 
 _test_dir() { # if dir
-  _prnt_b         "checking: { $1 } for existence"
-  _test_dir_exis  "$1" "$2"
-  _prnt_b         "$1 match: $2"
-  _assign_a2b     "$2" "$3" ; }
+  _prnt_b         "dir test:"
+  _prnt_b         "checking: { $3 } for existence"
+  _test_dir_exis  "$1" "$3"
+  [ $? -eq 1 ] && return
+  _assign_a2b     "$1" "$2" 
+  _prnt_b         "$1 match, setting:"
+  _prnt_b         "${2} = ${!2}"; _prnt_ln ;}
 
-_test_dirx()  { [ -n "$3" ] && _test_dir_x "$2" "$3" "$1"; }
+_test_dirx()  { [ -n "$2" ] && _test_dir "$1" "$2" "$3"; }
+
+
+# move ###############################################
 
 _rs()         { _prnt_h "rsync: $1 ---> $2"; rsync -avP "$1" "$2" ; }
 
 _rc_syc()     { src="$1"; dst="$2"; shift 2; rclone sync -vP "$@" --track-renames "$src" "$dst"; }
 
-_mv_loop()    { while IFS= read -r line; do _prnt_b "$2 $line->$3/."; mv "$line" "$3/"; done <<< "$1"; }
+_mv_loop()    { while IFS= read -r line; do _prnt_b "$3: $line -> $2 "; mv "$line" "$2/"; done <<< "$1"; }
 
 
 # sd_dcim ######################################
-_sd_test_i() {
-  sd_i="$(realpath "$HOME/$1")"
-  _test_dirx sd_i sd_r "sd root - as arg" ;} # manual input
 
-_sd_test_m() {
+_sd_test_i() { # manual sd dir input
+  [ -n "$1" ] || return
+  sd_i="$(realpath "$HOME/$sd_i")"
+  _test_dirx sd_i sd_r "sd root - as arg" ;}
+
+_sd_test_m() { # regx auto test
   [ -d "sd_r" ] && return
-  sd_m="$(_prinp_sd_abs)"
-  _test_dirx sd_m sd_r "sd root - regx" ;} # regx auto test
+  sd_m="$(_prnp_sd_abs)"
+  _test_dirx sd_m sd_r "sd root - regx" ;}
 
 _sd_set_dcim_x() { # if 'src'; then print to fifo
   sd_dcim_x="$sd_r/DCIM/"
   _test_dirx sd_dcim_x sd_dcim "sd dcim"
   [ -d "$sd_dcim" ] || _exit1 ;
   _prnt_b "$sd_dcim: exists 'dcim -> fifo'"
-  _prnt_c "$sd_dcim" > "$FIFO_DS" ;}
+  _prnt_c "$sd_dcim" > "$fifo_ds" # not req now?
+  _prnt_ln ;}
 
 
-# sd meta ##########################################
+# sd meta
+
 _sd_set_dcim() { #1. test sd exist set dcim loc
   [ -d "$sd_dcim" ] && return # TODO: func which returns parent func? possible?
   _sd_test_i
@@ -109,22 +134,24 @@ _sd_set_dcim() { #1. test sd exist set dcim loc
 
 
 # sd_mv ######################################
+
 _sd_rs()  { _rs "$sd_dcim/" "$dst"; }
 
-_sd_bkp() { _mv_loop "$dcim_bkls" "$dcim_bkp" "sd_dcim bkp:"; }
+_sd_bkp() { _init_sd_bkp; _mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"; }
 
 _sd_srt() { _sort_date_dir_root "$sd_dcim"; }
 
 _sd_mv () { # cp 'sd -> staging area' & mv -> sd/bkp
   _sd_set_dcim
-  _sd_rs
+  #_sd_rs
   _sd_bkp ;}
 
-# sd_meta #########################################
+
+# sd_macro #########################################
 _sd_all () { #1. main
-  _sd_set_dcim
-  #_sort_date_dir_root "$sd_dcim"
-  _sd_mv "$dst" "$sdi"
+  _init_imp "$@"
+  #_sort_date_dir_root "$sd_dcim" # todo
+  _sd_mv
   _syc_g1x
 }
 
@@ -157,8 +184,19 @@ _mv2client() {
 _syc_g1x () {
   i="${1}" && shift 1
   _prnt_h "clone sync to g1:"
-  _rc_syc "$r/$i" "g1:/xdsa/$i/" "$@"
-}
+  _rc_syc "$r/$i" "g1:/xdsa/$i/" "$@" ; }
+
+
+# asynchronous ###############################
+_init_sd_bkp() {
+  sd_bkp="$sd_r/bkp"
+  sd_bkls="$(_prnp_bkls)" ;}
+
+_init_imp() {
+  dst_i="$1"
+  sd_i="$2" 
+  dst="$(realpath $r/$dst_i)" ;}
+
 
 ## CASES ==============================
 _help() {
@@ -179,7 +217,7 @@ case $cmd in
   mv.sd)            _mv_sd_i    "" "$@" ;;
   client.x|cl)      _mv_client_profile "$@" ;;
   sy|sy.g|sy.g1)    _syc_g1x "$@" ;;
-  sd.all)           _sd_all   "" "$@";;
+  sd.all)           _sd_all  "$@";;
 esac
 
 

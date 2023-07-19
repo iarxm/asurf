@@ -74,6 +74,19 @@
 	- mv renames if on same filesystem
 	- which is better option in most cases..
 
+### TODO
+- sep personal data into sep file; source that file from here; or use config file..
+- make handle to ensure1 sd is picked if multiple available
+
+- switch move functions to operate on global variables?
+- one downside to this would be the accidental calling of a function leads to unintended moving...
+
+- generalise 'sd...' to a subset of 'import' category of functions
+   - ie functions that relate to importing data to local project space
+   - and then functions involved in exporting/distributing
+   - and applying modifcations to a project space such as sorting
+   - {imp} -> {mod} -> {exp}
+
 ## xTODO:sd
 x- Turn sd_a evaluation into a conditional test.. 
 x- Only set it if it exisits.. 
