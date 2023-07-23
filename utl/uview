@@ -2,15 +2,24 @@
 
 # ######################################################
 # AUTHOR: IAROM MADDEN
+# dep: tabbed mpv neovim zathura nuke
+# tabbed configured w relative tabs and new pos = 1
 # ########################################################
 
-# init
+# config
+
+pcache="$HOME/.cache/asurf"
+
+t_lim_xdot="0.5"
+t_lim="0.1"
+t1="100000"
+
+# init universals
 
 fifox="$1"
 
 { [ ! -n "$fifox" ] && [ -f "$NNN_FIFO" ]; } || fifox="$NNN_FIFO"
 
-pcache="$HOME/.cache/asurf"
 mkdir -p "$pcache"
 log_x="$pcache/uview.log"
 cache_tt_switch="$pcache/cache.tt.switch"
@@ -18,11 +27,12 @@ cache_f_curr="$pcache/cache.f_curr"
 
 nvim_serv="$fifox.nvim.server.pipe"
 
+tab_mpv="1" # mpv tab
+tab_nvi="2" # nvim tab
+tab_zat="3" # zathura tab
 
-t_lim_xdot="0.5"
-t_lim="0.1"
-t1="100000"
-	
+# init univ futures
+
 pid_view=""
 pid_tabd=""
 xid_main=""
@@ -31,6 +41,7 @@ f_curr=""
 f_last=""
 mime_curr=""
 mime_last=""
+
 
 # print ########################################
 
@@ -44,7 +55,7 @@ _prnt_f_cache()     { cat "$cache_f_curr"; }
 
 _prnt_pid_nvim()    { pgrep -f "nvim --listen ${nvim_serv}"; }
 
-_prnt_pid_mpv()     { pgrep -f "mpv .*$SOCKET"; }
+_prnt_pid_mpv()     { pgrep -f "mpv .*$soc"; }
 
 debugx()            { _prnt "$1" >> "$log_x" ; }
 
@@ -84,13 +95,20 @@ _win_foc_brute() 		{ _window_foc_brutex; } # unused?
 
 _win_foc_main() 		{ xdotool windowactivate "$main_win"; }
 
-_win_foc_tabx()     { xdotool windowactivate "$1"; }
+_win_foc_xid() 		  { xdotool windowactivate "$xid"; }
 
-_win_foc_mpv() 	    { _win_foc_tabx $winid_mpv; win_foc_main; }
+#_win_foc_tabx()     { _win_foc_xid; xdotool key "Ctrl+$1"; } # _win_foc_main; }
 
-_win_foc_nvim() 	  { _win_foc_tabx $winid_nvim; win_foc_main; }
+#_win_foc_tabx()     { xdotool key --window "$xid" "Ctrl+$1"; } # _win_foc_main; }
 
-_win_foc_zath() 	  { _win_foc_tabx $winid_zath; win_foc_main; } #TODO
+_win_foc_tabx()     { xdotool key --window "$xid" "Ctrl+$1";  _win_foc_main; }
+
+_win_foc_mpv() 	    { _win_foc_tabx $tab_mpv; }
+
+_win_foc_nvim() 	  { _win_foc_tabx $tab_nvi; }
+
+_win_foc_zath() 	  { _win_foc_tabx $tab_zat; } #TODO
+
 
 # behave
 
@@ -98,13 +116,13 @@ _win_foc() {
 	xid_active="$(xdotool getactivewindow)"
   if [ $((xid_active == xid)) -ne 0 ] ; then
 		xdotool windowactivate "$main_win"
-		else
-			timeout "$t_lim_xdot" xdotool behave "$xid" focus windowactivate "$main_win" &
+		#else
+			#timeout "$t_lim_xdot" xdotool behave "$xid" focus windowactivate "$main_win" &
   fi; }
 
 _kill_tabbed()			{ kill "$pid_tabd"; }
 
-_kill_jobs() 				{ rm "$SOCKET"; disown; }
+_kill_jobs() 				{ rm "$soc"; disown; }
 
 
 # tests
@@ -116,6 +134,7 @@ _mime_test_vim() 		{ _prnt "$1" | grep -e "text" -e "inode/directory" ; }
 _mime_test_doc() 		{ _prnt "$1" | grep -e "application/pdf" ; } #todo: epubs..
 
 _test_fifo()        { [ ! -r "$fifox" ] && { echo "\$fifox read fail ('$fifox')"; exit 1; }; }
+
 
 # mime/progs ###################################################
 
@@ -140,29 +159,27 @@ _term_nuke ()  { $term "$1" -e "$nuke" "$2" & }
 
 _mpv_xa() {
 	mpv \
-		--input-ipc-server="${SOCKET}" \
+		--input-ipc-server="${soc}" \
 		--wid="$xid" \
 	 	--no-focus-on-open \
 		--force-window=immediate \
+    --idle \
 		"${f_curr}" &
-  sleep 1s && _set_pid_mpv; _set_winid_nvim; }
+  sleep 1s && _set_pid_mpv; _set_winid_mpv; }
 
 
-_mpvc_add() { printf '%s\n' "{ \"command\": [\"loadfile\", \"$f_curr\", \"replace\" ] }" | socat - "${SOCKET}" &> /dev/null; }
+_mpvc_add() { printf '%s\n' "{ \"command\": [\"loadfile\", \"$f_curr\", \"replace\" ] }" | socat - "${soc}" &> /dev/null; }
 
-_mpv_socx() { # socket mpv
+_mpvx() { # socket mpv
 	#[ -eq "$(_prnt_swit)" = "n" ] && return
 
-	{ [ -n "$(pgrep -f "mpv .*$SOCKET")" ] \
+	{ [ -n "$(pgrep -f "mpv .*$soc")" ] \
 		|| { _mpv_xa; return; } \
 		;} && { _mpvc_add; }
 }
 
-_mpvx()       { _mpv_socx; }
-
 
 # nvim #######################################
-
 
 _nvim_start() { 
   $term "$xid" -e nvim --listen "${nvim_serv}" &
@@ -181,9 +198,33 @@ _nvimx() {
     || { _nvim_start; sleep 0.1; _nvim_send; }; }
 
 # zath #########################################
+_prnt_zath_id() {
+  dbus-send --session \
+    --dest=org.freedesktop.DBus \
+    --type=method_call          \
+    --print-reply               \
+    /org/freedesktop/DBus       \
+    org.freedesktop.DBus.ListNames | sed -nr '/^.*string "(.*zathura.*)"/{s//\1/p;q;}' ;}
+
+_win_zath_id () { sleep 1; zath_id=$(_prnt_zath_id) ; }
+
+_zath_send() { # open file
+  dbus-send --session  \
+   --dest="$zath_id"  \
+   --type=method_call \
+   --print-reply      \
+    /org/pwmt/zathura  \
+    org.pwmt.zathura.OpenDocument \
+    string:"$f_curr" \
+    string:'' \
+    int32:1 >/dev/null ; }
+
+_zathxa() { zathura -e "$xid" "$f_curr" & _win_zath_id; }
+
 _zathx() {
-  [ "$(_prnt_swit)" = "n" ] && return
-  zathura.dbus "$f_curr" "$xid" & }
+  [ -n "$zath_id" ] && { _zath_send; return; }
+  _zathxa ;}
+
 
 # mime handling #############################
 
@@ -230,8 +271,7 @@ _mime_switch() { # mime switches
 		#*) all ;;
 	esac ;}
 
-
-# tabbed/viewers #######################################
+# tabbed ########################################
 
 _p_tabbed_start () { # start tabbed
 		fifoy="$(mktemp -u)"
@@ -240,66 +280,84 @@ _p_tabbed_start () { # start tabbed
     	
 		jobs # clear 'completed'
    	pid_tabd="$(jobs -p %%)"
- 		SOCKET="${MPV_SOCKET:-/tmp/mpvsocket.$pid_tabd}"
+ 		soc="${MPV_SOCKET:-/tmp/mpvsoc.$pid_tabd}"
     
 		[ -z "$pid_tabd" ] && { echo "Can't start tabbed"; exit 1; }
 		read -r xid < "$fifoy" && rm "$fifoy"
+
+    _mpv_xa & sleep 0.2
+    _nvim_start & sleep 0.5
+    _zathxa & sleep 0.2
 		
 		i3-msg 'no_focus [id="$xid"]' # i3 props
     i3-msg 'for_window [id="$xid"] border 2px'
     i3-msg 'for_window [instance="preview"] border 2px' ;}
 
+_sigint_kill () { _kill_viewer; kill "$pid_tabd"; exit 0 ; }
+
+
+# viewing #######################################
 
 _kill_viewer_pid() { if [ -n "$pid_view" ] && jobs -p | grep "$pid_view"; then kill "$pid_view"; fi; }
+
+_kill_mpv() { pid_mpv="$(_prnt_pid_mpv)"; [ -n "$pid_mpv" ] && kill "$pid_mpv"; }
 
 _kill_nvim() { 
   pid_nvim="$(_prnt_pid_nvim)"
   [ -n "$pid_nvim" ] || return
   for i in $pid_nvim; do kill "$i"; done; }
 
+_mime_test_last() {
+  is_last_media=$(_mime_test_media "$mime_last")
+  is_last_vim=$(_mime_test_vim "$mime_last")
+  is_last_doc=$(_mime_test_doc "$mime_last") ;}
+
+_mime_test_curr() {
+	is_curr_media=$(_mime_test_media "$mime_curr")
+  is_curr_vim=$(_mime_test_vim "$mime_curr")
+  is_curr_doc=$(_mime_test_doc "$mime_curr");}
+
 _kill_viewer() { # viewer
   # if last was vid/txt/node: { curm = lastm -> return || otherwise kill }
-	is_last_media=$(_mime_test_media "$mime_last")
-	is_curr_media=$(_mime_test_media "$mime_curr")
-	is_last_vim=$(_mime_test_vim "$mime_last")
-  is_curr_vim=$(_mime_test_vim "$mime_curr")
-  is_last_doc=$(_mime_test_doc "$mime_last")
-  is_curr_doc=$(_mime_test_doc "$mime_curr")
-
-  [ -n "$is_last_media"  ] && [ -n "$is_curr_media" ] && return
-  [ -n "$is_last_vim"  ] && [ -n "$is_curr_vim" ] && return
-  [ -n "$is_last_doc"  ] && [ -n "$is_curr_doc" ] && return
-
-  
-  
-  _kill_nvim 
-	pid_mpv="$(_prnt_pid_mpv)"; [ -n "pid_mpv" ] && kill "$pid_mpv"
-
+	_mime_test_curr
+  _mime_test_last
+  [ -n "$is_last_media"  ] && return
+  [ -n "$is_last_vim"  ] && return
+  [ -n "$is_last_doc"  ] && return
+  #[ -n "$is_last_media"  ] && [ -n "$is_curr_media" ] && return
+  #[ -n "$is_last_vim"  ] && [ -n "$is_curr_vim" ] && return
+  #[ -n "$is_last_doc"  ] && [ -n "$is_curr_doc" ] && return
+  #_kill_nvim 
+  #_kill_mpv
   _kill_viewer_pid ; }
 
-_foc_viewr_x() {
-  #TODO: work in progress
-  #require solution for grabbing window focus on background tabs in tabbed
+_foc_viewer_x() { # sol to grab foc of background tabs? #TODO: work in progress
+  debugx "##############################" 
+  debugx "does mime_curr = mime_last"
+  debugx "curr: $mime_curr"
+  debugx "last: $mime_last"
+  [ $mime_curr = $mime_last ] && return
+
+  debugx "grab foc cases:"
+
   [ -n "$is_curr_media"  ] \
-    && [ ! $mime_curr = $mime_last ] \
     && debugx "grab mpv foc" \
     && _win_foc_mpv \
     && return
   
   [ -n "$is_curr_vim"  ] \
-    && [ ! $mime_curr = $mime_last ] \
+    && debugx "grab vim foc" \
     && _win_foc_nvim \
     && return
 
   [ -n "$is_curr_doc"  ] \
-    && [ ! $mime_curr = $mime_last ] \
+    && debugx "grab doc foc" \
     && _win_foc_zath \
     && return ;}
 
-_sigint_kill () { kill_viewer; kill "$pid_tabd"; exit 0 ; }
+
 
 _tt_sw()  { _prnt "$1" > "$cache_tt_switch"; }
-
 
 _timer() {
   f_start="${f_curr}"
@@ -339,8 +397,8 @@ _loop_init() { # init new file arg
 # view
 
 _loop_view() {
-  
 	_kill_viewer
+  _foc_viewer_x
 	_mime_switch 
   _timer & }
 
