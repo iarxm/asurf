@@ -152,12 +152,14 @@ _sd_all () { #1. main
   _init_imp "$@"
   #_sort_date_dir_root "$sd_dcim" # todo
   _sd_mv
-  _syc_g1x
+  _syc_o1x
+  #_syc_g1x
 }
 
 
 # SORTING: Client dirs ############################
 # TODO:
+
 _mv2client_init() { #
   export dst_root=$1  # client directory
   export dst_root=$1  # source
@@ -180,14 +182,22 @@ _mv2client() {
   _mv2client_loop ; }
 
 
-# sync ##########################################
-_syc_g1x () {
-  i="${1}" && shift 1
-  _prnt_h "clone sync to g1:"
-  _rc_syc "$r/$i" "g1:/xdsa/$i/" "$@" ; }
 
+# sync ##########################################
+
+_syc_x () { 
+  r_c="${1}" # cloud root
+  i="${2}" # dir feed
+  shift 2
+  _prnt_h "rclone sync to < $r_c >"
+  _rc_syc "$r/$i" "$r_c/$i/" ; }
+
+_syc_g1x () { _syc_x "g1:/xdsa" "$1" ; }
+
+_syc_o1x () { _syc_x "o1:/xdsa" "$1" ; }
 
 # asynchronous ###############################
+
 _init_sd_bkp() {
   sd_bkp="$sd_r/bkp"
   sd_bkls="$(_prnp_bkls)" ;}
@@ -216,7 +226,9 @@ case $cmd in
   # MAIN
   mv.sd)            _mv_sd_i    "" "$@" ;;
   client.x|cl)      _mv_client_profile "$@" ;;
-  sy|sy.g|sy.g1)    _syc_g1x "$@" ;;
+  sy.g1)            _syc_g1x "$@" ;;
+  sy.o1)            _syc_o1x "$@" ;;
+  sy)               _syc_o1x "$@" ;;
   sd.all)           _sd_all  "$@";;
 esac
 
