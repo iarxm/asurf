@@ -6,8 +6,11 @@
 # Centralise calling of various tools
 #
 # #################################
+
 # init
+
 cmd="$1" && shift 1
+
 
 # cmd #############################
 

@@ -53,7 +53,7 @@ debug="./.test/debug"
 
 _prnt()         { printf "%s\n" "$1"; }
 
-_print_id()     { _prnt "$f" | grep -Eo -Eo "[x,P,S][[:digit:]]{7,7}|S[[:digit:]]{7,7}|[x,s,A][[:digit:]]{4,4}"; } # todo: sed version? include an array of regex's?
+_print_id()     { _prnt "$f" | grep -Eo -Eo "[x,P,S,C][[:digit:]]{7,7}|S[[:digit:]]{7,7}|[x,s,S,A,C][[:digit:]]{4,4}"; } # todo: sed version? include an array of regex's?
 
 _print_id_new() { _prnt "$m_id" | sed -E 's/^.*([0-9]{4})$/\1/'; } # cut id to 4 digits
 
@@ -107,7 +107,7 @@ _load_m(){ # load meta strings
 
 # read
 
-_readx() { _prnt "TAG: $1?"; read -r "$2"; _join_xy "$2" m_add "$3"; }
+_readx() { _prnt "TAG: $1?"; read -e -r "$2"; _join_xy "$2" m_add "$3"; }
 
 _read() { # read tags
   _readx "Surfer" "t_s" "S"
