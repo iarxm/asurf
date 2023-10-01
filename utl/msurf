@@ -18,11 +18,12 @@
 #
 # ================================================
 
-
 # init cfg
 
-rx="$HOME/xdsa" # root work tree
-regx_sdx='/SD_.*|/sd\..*|/LUMIX'
+rx="$HOME/xa" # root work tree
+ry="/data/ux" # all years / trees
+dst_i_def="ai"
+regx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
 sd_mntx="/home/iao/zm/zm"
 
 
@@ -30,9 +31,9 @@ sd_mntx="/home/iao/zm/zm"
 
 psep="#########################"
 prefix="MSURF"
-fifo_ds="$XDG_CACHE_HOME/asurf/fifo.dsmv" # TODO: setup fifo w formal code
 regx_sd="$regx_sdx"
 sd_mnt="$sd_mntx"
+#fifo_ds="$XDG_CACHE_HOME/asurf/fifo.dsmv" # TODO: setup fifo w formal code
 
 # sd / imp
 sd_i="" # sd path as arg
@@ -42,31 +43,30 @@ sd_dcim="" # dcim
 sd_bkp=""
 
 # workspace
-r="$rx" # root work tree
+r="$(realpath "$rx")" # root work tree
 dst_i="" # inputed sub dir
 dst=""  # dst full path
 
-  
 
 # funcs ######################################
-# print
 
+# print
 
 _prnt_ln()    { printf "%s\n" " "; } # empty line
 
 _prnt_c()     { printf "%s\n" "$1"; } # 'clean' print
 
-_prnt_b()     { printf "$prefix: %s\n" "$1"; }
+_prnt_b()     { printf "$prefix: %s\n" "$@" ; }
 
 _prnt_h()     { printf "$prefix: %s\n" "$psep" "# $1" "$psep"; }
+
+_prnt_h2()    { printf "$prefix: %s\n" "$psep" "# $1"; }
 
 _find_d()     { find "$1" -mindepth 1 -maxdepth 1 -type d -exec realpath {} \; ;}
 
 _find_d_grp() { _find_d "$1" | grep -E "$2"; }
 
-_prnp_bkls()  { _find_d "$sd_dcim"; } # move?
-
-_prnp_sd_abs(){ _find_d_grp "$sd_mnt/" "$regx_sd"; } # '../' is required
+_prnp_sd_abs(){ _find_d_grp "$sd_mntx/" "$regx_sd"; } # '../' is required
 
 
 # exit #########################################
@@ -80,9 +80,9 @@ _exitx()      { _prnt_b " " ; } #todo
 
 _assign_a2b()     { [ -n "$2" ] && eval "${2}"="${!1}"; }
 
-_test_dir_exis()  { [ -d "${!1}" ] || { _prnt_b "no { $2 } match; return" && return 1; }; }
+_test_dir_exis()  { [ -d "${!1}" ] || { _prnt_b "no match of { $2 }; return" && return 1; }; }
 
-_test_dir() { # if dir
+_test_dir() { # if $1 exists, assign value to $2 # TODO: more logical name
   _prnt_b         "dir test:"
   _prnt_b         "checking: { $3 } for existence"
   _test_dir_exis  "$1" "$3"
@@ -96,7 +96,7 @@ _test_dirx()  { [ -n "$2" ] && _test_dir "$1" "$2" "$3"; }
 
 # move ###############################################
 
-_rs()         { _prnt_h "rsync: $1 ---> $2"; rsync -avP "$1" "$2" ; }
+_rs()         { _prnt_h "rsync: $1 ---> $2"; rsync -avP "$1" "$2" ; _prnt_ln; }
 
 _rc_syc()     { src="$1"; dst="$2"; shift 2; rclone sync -vP "$@" --track-renames "$src" "$dst"; }
 
@@ -106,130 +106,319 @@ _mv_loop()    { while IFS= read -r line; do _prnt_b "$3: $line -> $2 "; mv "$lin
 # sd_dcim ######################################
 
 _sd_test_i() { # manual sd dir input
-  [ -n "$1" ] || return
+  [ -n "$sd_i" ] || return
   sd_i="$(realpath "$HOME/$sd_i")"
   _test_dirx sd_i sd_r "sd root - as arg" ;}
 
 _sd_test_m() { # regx auto test
-  [ -d "sd_r" ] && return
+  [ -d "$sd_r" ] && return
   sd_m="$(_prnp_sd_abs)"
   _test_dirx sd_m sd_r "sd root - regx" ;}
 
 _sd_set_dcim_x() { # if 'src'; then print to fifo
+  [ -d "$sd_r" ] || _exit1
   sd_dcim_x="$sd_r/DCIM/"
   _test_dirx sd_dcim_x sd_dcim "sd dcim"
-  [ -d "$sd_dcim" ] || _exit1 ;
-  _prnt_b "$sd_dcim: exists 'dcim -> fifo'"
-  _prnt_c "$sd_dcim" > "$fifo_ds" # not req now?
-  _prnt_ln ;}
+  [ -d "$sd_dcim" ] || _exit1
+  sd_bkp="$sd_r/bkp" && mkdir -p $sd_bkp ;}
 
 
-# sd meta
+# init asynchronous ###############################
 
-_sd_set_dcim() { #1. test sd exist set dcim loc
+_init_sd_imp() { 
+  dst_i="$1"
+  sd_i="$2"
+  [ -z "$dst_i" ] && dst_i="$dst_i_def"
+  dst="$(realpath "$r/$dst_i")" ;}
+
+_init_sd() { #1. test sd exist set dcim loc
   [ -d "$sd_dcim" ] && return # TODO: func which returns parent func? possible?
+  _init_sd_imp "$@"
   _sd_test_i
   _sd_test_m
   _sd_set_dcim_x ; }
+
+#_init_sd_bkp() { sd_bkls="$(_find_d "$sd_dcim")"; }
 
 
 # sd_mv ######################################
 
 _sd_rs()  { _rs "$sd_dcim/" "$dst"; }
 
-_sd_bkp() { _init_sd_bkp; _mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"; }
+#_sd_bkp() { _init_sd_bkp; _prnt_h "sd bkp"; _mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"; }
+_sd_bkp() { _prnt_h "sd bkp"; _mv_loop "$(_find_d "$sd_dcim")" "$sd_bkp" "sd_dcim bkp:"; }
 
-_sd_srt() { _sort_date_dir_root "$sd_dcim"; }
+_sd_srt_x() { _srt_date_r "$sd_dcim"; }
 
-_sd_mv () { # cp 'sd -> staging area' & mv -> sd/bkp
-  _sd_set_dcim
-  #_sd_rs
-  _sd_bkp ;}
+_sd_srt() { _init_sd "$@"; _sd_srt_x; }
 
+# meta
 
-# sd_macro #########################################
-_sd_all () { #1. main
-  _init_imp "$@"
-  #_sort_date_dir_root "$sd_dcim" # todo
-  _sd_mv
-  _syc_o1x
-  #_syc_g1x
-}
+_sd_mvx () { _init_sd "$@"; _sd_rs; }
 
 
-# SORTING: Client dirs ############################
-# TODO:
 
-_mv2client_init() { #
-  export dst_root=$1  # client directory
-  export dst_root=$1  # source
-  export client_pattern="S$2*"  ; } # filename pattern
+# srt: date and dirnames ################################
 
-_dirname_sesh() { dirname $src_file | sed 's,^\(.*/\)\?\([^/]*\),\2,'; }
+# todo: read input for appending to dirname
+# todo: pre-shorted unique id's using anotr method
 
-_client_ls=$(find $client_src_dir -name "*$pattern\.*") #-printf '%h\n'
+# todo: use loop functions here that are defined above:
+# todo: 80% done
+# major points: 
+# - currently will become messy if there already exists meta files within the src directory.
+# - fine if using clean sd imports
+# - required functionality: to base the date on the video file, and move all other associated files with identical identifier with that file.. Future project.
 
-_mv2client_loop() { for i in $(_client_ls); do _mv2client_x $i $dst_root; done ; }
+# init and meta data:
 
-_mv2client_x() { # session(y) -> client(x)
-  mkdir -p "$dst_dir"
-  prnt_b "$cl_file -> $cl_dir"
-  mv "$1" "$2/$(_sesh_dirname $1)/$(basename $1)" ;}
+_sd_srt_patterns='PANA'
+
+_prnt_h_srt() { _prnt_h "init sorting: $src_srt"; }
+
+_prnt_b_srt () { _prnt_b "Sorting: $src_srt_i"; }
+
+_prnt_srt_r () { _prnt_b "dirname suffix?"; }
+
+_srt_date_init() { src_srt="$1"; _prnt_h_srt; }
+
+_srt_date_read() { _prnt_srt_r; read -r srt_sfx ; }
 
 
-_mv2client() {
-  _mv2client_init
-  _mv2client_loop ; }
+# srt: date/dnames: moving individual files
 
+_srt_date_init_x () { # extract meta
+	f="${1}"; [ -f "$f" ] || return
+	di="$(date -r "$f" "+%D")"
+  dh="$(date -r "$f" "+%H")"
+	[ "$dh" -lt 12 ] && xm="a" || xm="p" # am or pm
+	dst_srt_date=$(date --date="$di" +%m%d%a | awk '{print tolower($0)}' | sed 's/.$//') ;}
+
+_srt_date_init_y() { # concat vars
+  sbase=$(dirname "$f" | xargs dirname)
+  sdirx="${dst_srt_date}${xm}.${srt_sfx}"
+	sdir="${sbase}/${sdirx}"
+	dst_srt="$sdir/$(basename "${f}")" ;}
+
+_srt_date_mv_x() { _prnt_b "$f -> $dst_srt"; mkdir -p "$sdir"; mv "$f" "$dst_srt"; }
+
+_srt_date_mv() {
+  _srt_date_init_x "$1"
+  _srt_date_init_y
+  _srt_date_mv_x ;}
+
+
+# srt: src dir x containing srf file's
+
+_srt_date_init_i() { src_srt_i="$1"; _prnt_b_srt; }
+
+_srt_date_ls() { find "$src_srt_i" -mindepth 1 -maxdepth 1 -type f -exec realpath {} \; ;}
+
+_srt_date_ls_lp() { for i in $(_srt_date_ls); do _srt_date_mv "$i"; done ;}
+
+_srt_date_clean() { # clean empty dirs
+	[ -z "$(find "$src_srt_i" -mindepth 1)" ] && { trash-put "$src_srt_i"; return; }
+	_print_b "warning: files still in old dir, not trashing" ;}
+
+_srt_date_x() {
+  _srt_date_init_i "$1"
+  _srt_date_ls_lp
+  _srt_date_clean ;}
+
+
+# srt: src root containing src dir's
+
+_srt_date_r_ls() { _find_d_grp "$src_srt" "$sd_srt_pattern"; }
+
+_srt_date_r_lp() { for d in $(_srt_date_r_ls); do _srt_date_x "$d"; done ;}
+
+_srt_date_r() {
+  _srt_date_init "$@"
+  _srt_date_read
+  _srt_date_r_lp ;}
+
+
+# srt: size #####################################
+
+# in progress
+# todo: high prio - useful for segregating large files...
+
+## Complicated by keeping together unique identifiers: keeping all files with the same identifier together. IE, 'mv' is a batch process that could apply to x number of screenshots as well as a video.
+
+_srt_siz_init() {
+  dmin="$1"
+	dmax="$2"
+  src_sz="$3"
+	prfx="d$dmax." ;}
+
+
+# mv
+
+_srt_size_init_x() {
+  src_szx="$f"
+  dst_szx="$prfx$base1" 
+  # todo - extract full path from $src_sz ... 
+  # similar to in srt_date..
+ }
+
+_srt_siz_mv_x() { mv "$src_szx" "$dst_szx"; }
+
+_srt_siz_mv() {
+  _srt_size_init_x $@ 
+  echo $dst_szx
+  exit
+  _srt_siz_mv_x ;}
+
+
+# loop
+
+_srt_siz_ls() { sz_ls="$(find $src_sz -mindepth 1 -maxdepth 1 -size "+$dmin" -size "-$dmax" -type f -exec realpath {} \; | grep -v jpg)"; }
+
+_srt_siz_test() {
+  _prnt_b "src: $srt_sz" "dmax: $dmax" "dmin is $dmin"
+  _prnt_b "matched files:" "$sz_ls"
+	[ ! -d "$src_x" ] && { _prnt_b "no directory; exiting"; exit 1; } ;}
+
+_srt_siz_confirm() {
+	printf "Rename files based on size? y/n \n"
+	read -r confirm; [ "$confirm" = "n" ] && { printf "Exiting on -no-"; exit 1; } ;}
+
+_srt_siz_lpx() { while read -r f ; do _srt_siz_mv "$f"; done <<< "$sz_ls";  }
+
+
+# control
+
+_srt_size() {
+  _srt_siz_init "$@"
+  _srt_siz_ls
+  _srt_siz_test
+  _srt_sia_confirm
+	_srt_siz_lpx ;}
+
+# meta sort
+
+_srt_sz10() { _srt_size 0M 11M "$@" ; }
+_srt_sz60() { _srt_size 30M 61M "$@" ; }
+_srt_sz200() { _srt_size 60M 200M "$@" ; }
+
+_srt_siz_all() {
+	sort_size 0M 11M "$1"
+	sort_size 10M 31M "$1"
+	sort_size 30M 61M "$1"
+	sort_size 60M 200M "$1" ;}
+
+
+# sort: client profiles ############################
+
+_mv2cl_init() { #
+  dst_cl_r="$1"  # client directory
+  src_cl_r="$2"  # source
+  pattern_cl="$3*"  ; } # filename pattern
+
+_mv2cl_x_init() {
+  src_cl_x="$1"
+  dst_cl_x="$dst_cl_r/$(_src_dname "$1")/$(basename "$1")"
+  mkdir -p "$dst_cl_r" ;}
+
+_src_cl_ls=$(find $src_cl_r -name "*$pattern_cl\.*") #-printf '%h\n'
+
+_src_dname() { dirname "$1" | sed 's,^\(.*/\)\?\([^/]*\),\2,'; } # move to top of file?
+
+_mv2cl_x() { prnt_b "$1 -> $dst_cl_r"; mv "$src_cl_i" "$dst_cl_x" ;} # session(y) -> client(x)
+_mv2cl_lp() { for i in $(_src_cl_ls); do _mv2cl_x "$i"; done ; } # todo: use _mv ?
+
+_mv2cl() {
+  _mv2cl_init "$@"
+  _mv2cl_lp ; }
 
 
 # sync ##########################################
 
-_syc_x () { 
+_syc_init() {
   r_c="${1}" # cloud root
   i="${2}" # dir feed
-  shift 2
-  _prnt_h "rclone sync to < $r_c >"
-  _rc_syc "$r/$i" "$r_c/$i/" ; }
+  src_syc="$r/$i"
+  dst_syc="$r_c/$i";}
+
+_syc_init_yr() {
+  yr="${1}"
+  r_c="${2}"
+  i="${3}"
+  src_syc="$ry/dsx$yr/$i" 
+  dst_syc="$r_c/dsz/$yr/$i" ;}
+
+_syc_a () { _prnt_h "rclone sync to < $r_c >"; _rc_syc "$src_syc" "$dst_syc" ; }
+
+_syc_x() { _syc_init "$@"; _syc_a; }
 
 _syc_g1x () { _syc_x "g1:/xdsa" "$1" ; }
 
 _syc_o1x () { _syc_x "o1:/xdsa" "$1" ; }
 
-# asynchronous ###############################
-
-_init_sd_bkp() {
-  sd_bkp="$sd_r/bkp"
-  sd_bkls="$(_prnp_bkls)" ;}
-
-_init_imp() {
-  dst_i="$1"
-  sd_i="$2" 
-  dst="$(realpath $r/$dst_i)" ;}
+_syc_dvb () { _syc_x "$HOME/zm/dvb/.rcl/xds/" "$1" ; } # external device
 
 
-## CASES ==============================
+# macros #########################################
+
+_all_xa () { #1. main
+  _init_sd "$@"
+  _sd_srt_x # todo
+  _sd_rs ;}
+
+_all_xb () {
+  _all_xa "$@"
+  _sd_bkp ;}
+
+_all_xc () {
+  _all_xb "$@"
+  _syc_o1x ;}
+  
+
+## CASES #########################################
+
 _help() {
   printf "TODO"
 }
 
+_prnt_h "INITIALISE"
+
 cmd="${1}" && [ -n "$cmd" ] && shift 1
 
 case $cmd in
-  test.sd.exists)   _test_sd_exists ;;
-  test.sd)          _test_sd_fifo ;;
+  help)             _help ;;
+  # C
+  srt.size)         _srt_size "$@" ;;
+  sz10)             _srt_sz10 "$@" ;;
+  sz60)             _srt_sz60 "$@" ;;
+  sz200)            _srt_sz200 "$@" ;;
+  sd.srt)           _sd_srt "$@";;
   srt.dir.i)        _sort_date_dir "$@" ;; # sort arg dir
-  srt.sd)           _srt_sd "$1" ;;
   sy.dvb)           _syc_ext_dvb "$@" ;;
   sy.y21)           _syc_year "$@" ;;
-  help)             _help ;;
-  # MAIN
-  mv.sd)            _mv_sd_i    "" "$@" ;;
-  client.x|cl)      _mv_client_profile "$@" ;;
+  # B
   sy.g1)            _syc_g1x "$@" ;;
   sy.o1)            _syc_o1x "$@" ;;
+  # A
+  cl|client.x)      _mv2cl "$@" ;;
+  sd.mv)            _sd_mvx "$@" ;;
   sy)               _syc_o1x "$@" ;;
-  sd.all)           _sd_all  "$@";;
+  all.b)            _all_xb "$@" ;;
+  all)              _all_xc  "$@" ;;
 esac
 
+exit
+
+## ARCHIVE ##################################
+# Previous use of FIFO's:
+#_prnt_b "$sd_dcim: exists 'dcim -> fifo'"
+  #_prnt_c "$sd_dcim" > "$fifo_ds" # not req now?
+
+_srt_date_r_test() { #1. check srs dirs
+  # not quite necessary - about same resources as just running the code
+	[ ! -n "$dir_ls" ] && { prnt_b "dirs non-existent; return"; return; }
+	prnt_b "Source dir's exist:\n $dir_ls" ;}
+
+# sd
+  sd.test.exists)   _test_sd_exists ;;
+  sd.test.fifo)     _test_sd_fifo ;;
 
