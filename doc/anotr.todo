@@ -1,17 +1,4 @@
-# DOCUMENTATION:
-## Update to the architecture. 
-- To make good use of variables and make the code more readable:
-	- assign global variables which functions assign values to
-	- assign functions to act on those global variables
-	- as i then iterate through a loop, all i have to do is assign the specific instance of 'x' to the global variable and then run the global macro/functions
-
-
-# tags
-## NOTE
-- Use "$1" instead of $nnn for passing filename to functions. Will allow for greater future cross compatibility with other file managers..
-- Pass $nnn as argument to the script itself..
-
-# FUNCTIONS
+# FUNCTIONS: anotr
 
 ## _f_ext
 
@@ -45,7 +32,7 @@
 - Load code and associated files into memeory
 - Match the whole code of 4 to 7 digits in length
 
-# _f_clone
+## _f_clone
 - DUPLICATE MP4 file associated with unique id
     - For clips with multiple waves/surfers
 	- Just for one file, to just clone the video
@@ -58,6 +45,5 @@
 	- ie screenshots, contact cards, note files, etc..
 	- usually distinct by the file extension..
 
-
-
 <!--- vim:ft=markdown
+--->

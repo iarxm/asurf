@@ -1,0 +1,8 @@
+# DOCUMENTATION:
+## Update to the architecture. 
+- To make good use of variables and make the code more readable:
+	- assign global variables which functions assign values to
+	- assign functions to act on those global variables
+	- as i then iterate through a loop, all i have to do is assign the specific instance of 'x' to the global variable and then run the global macro/functions
+
+<!--- vim:ft=markdown

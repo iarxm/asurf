@@ -4,7 +4,7 @@
 	- Easier readabilitiy
 	- Input data, output data
 	- assign the output data to specific variables..
-- Begin converting bash code scripts
+- Begin converting bash code scripts to c code
 
 
 # anotr
@@ -19,78 +19,14 @@
 
 # tags
 ## TODO
-	- Remove PWD commands in favour of absolute path manipulations..
-	- Integrate new tags into already existing meta tags more fluently
+- Remove all PWD commands in favour of absolute path manipulations..
+- Integrate new tags into already existing meta tags more fluently
 		- Ie, add all S tags together and so on..
 
 ## TODO:
 - call functions from this file via aliase scripts
 - Simplifies development by centralising the code
 
-
-# msurf
-
-## TODO:
-### TIER1:
-- COLOR: Add color to printf funcs. Create visual diff between eg rsync output and bash script outp.
-- SORT: Read input to name the dir when sorting by am/pm
-	- String reads, eg: 'level' 'location' 'etc', similar to tagging func
-- Add a way to save all output to a second stream that goes into a log file..
-	- So i can see what's occuring when a run of the script returns errors or unexpected results.
-- future - create directories for input if they're not made already
-
-### TIER2:	
-	- Make all contained functions functional
-	- Publish scripts to public via github
-	- Complete all sub- todo sections witin each function
-
-### init
-- improving the regexp on 'init' - to only match sd cards ..
-
-### moving scripts
-- create a 'cp' variant. 
-- and an option to choose an sd when sd card label not in pattern
-- remove sd_a and sd constructions??
-- put them in a higher level script??
-- Remove functions above??
-	- overkill?
-	- one occurrence
-	- Are loops required for 'mv' and 'rsync' commands??
-- Remove fifo and 'src' definitions??
-
-### sorting
-- Generalise to absolute filepaths so the sort functions are generalised and can be easily utilised within other use cases.
-- make it applicable to context..
-	- sd cards, 
-	- or xds/.../?
-- make this more general to other cameras etc..
-	- IE beyond PANA.. pattern matching
-	- add option to add suffix to dir name...	
-		- IE for session metaday (loc.level.. etc)
-
-### _mv2client
-- RYSNC OR MV?
-	- rsync copies and removes
-	- mv renames if on same filesystem
-	- which is better option in most cases..
-
-### TODO
-- sep personal data into sep file; source that file from here; or use config file..
-- make handle to ensure1 sd is picked if multiple available
-
-- switch move functions to operate on global variables?
-- one downside to this would be the accidental calling of a function leads to unintended moving...
-
-- generalise 'sd...' to a subset of 'import' category of functions
-   - ie functions that relate to importing data to local project space
-   - and then functions involved in exporting/distributing
-   - and applying modifcations to a project space such as sorting
-   - {imp} -> {mod} -> {exp}
-
-## xTODO:sd
-x- Turn sd_a evaluation into a conditional test.. 
-x- Only set it if it exisits.. 
-x- Rather than nesting two tests in the first 'if'..
 
 
 <!--- vim: ft=markdown

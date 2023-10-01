@@ -1,0 +1,8 @@
+# tags
+## NOTE
+- Use "$1" instead of $nnn for passing filename to functions. Will allow for greater future cross compatibility with other file managers..
+- Pass $nnn as argument to the script itself..
+
+
+<!--- vim:ft=markdown
+--->
