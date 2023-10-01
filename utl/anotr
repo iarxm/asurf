@@ -48,7 +48,6 @@ log_f="$cachex/f.log"
 debug="./.test/debug"
 
 
-
 # printing
 
 _prnt()         { printf "%s\n" "$1"; }
@@ -90,10 +89,12 @@ _handle_no_id() { _hand_test "$m_id" "no id code"; } # handle no id
 
 # load
 
+_load_f_ls() { f_ls="$(_print_id_ls)"; }
+
 _load_id() { # load id/files
   m_id="$(_print_id)"
   m_id="$(_print_id_new)"
-  f_ls="$(_print_id_ls)"
+  _load_f_ls
   _handle_no_id ;}
 
 _load_m(){ # load meta strings
@@ -107,15 +108,24 @@ _load_m(){ # load meta strings
 
 # read
 
+_read_init() { 
+  _prnt "ID: "; _print_id
+  bind -x '"\C-x": kill -SIGUSR1 $$' 2>/dev/null
+  trap "exit 1" SIGUSR1; }
+
+_read_clean() {
+  m_add=$(_rm_wspace "$m_add") # remove all white space
+  trap - SIGUSR1 # Restore SIG handle
+  clear ;}
+
 _readx() { _prnt "TAG: $1?"; read -e -r "$2"; _join_xy "$2" m_add "$3"; }
 
 _read() { # read tags
-  printf "ID: "; _print_id
+  _read_init
   _readx "Surfer" "t_s" "S"
   _readx "Rating" "t_r" "R"
   _readx "Notation" "t_n" "N"
-  clear
-  m_add=$(_rm_wspace "$m_add"); } # remove all white space
+  _read_clean ;} 
 
 
 # concantenating: init
@@ -160,12 +170,14 @@ _cp()     { cp "$PWD/$f" "$PWD/$f_new"; clear; } #
 
 _loop()   { for i in $f_ls; do f="$i"; _fnew $1 $2; done; }
 
+
 # MACROS ###################################
 
 tg_add() { # tag; add tags to all files w id
   m_pre_a="$m_pre_add"
   _load_id
   _read
+  _load_f_ls # incase new files added whilst 'read..'
   _loop _conc_m_add _mv ; }
 
 tg_rm() { # undu; remove all annotations
