@@ -1,0 +1,51 @@
+# wsurf
+
+## TODOS
+
+### TODO: 
+
+- CONVERT FIRST FEW BELOW INTO ALIASES??
+- TIDY UP THIS FILE, CONVERT INTO UNIFIED PROGRAM
+- REMOVE xdotool dependencies
+- Separate personal data from functional code
+
+
+## DOCU
+
+### Full workspaces 
+
+- Overview:OLD
+1. Load floating nnn
+2. Load stationary with preview
+3. Load other programs
+
+- Other:NEW
+1. gimp space
+2. floating preview
+
+
+### Preivew:
+
+1. Load i3 layout
+2. Spawn nnn and load tabs
+3. Spawn preview window
+ 	4. sleep to allow preview to load
+	4. Using 'preview-tabbed' default - fallback
+
+### floating nnn:
+
+1. Spawn floating nnn
+2. Setup tabs
+3. Hide in scratchpad
+
+
+### nnn tabs
+
+1. nnn. setup specific folder tab
+2. nnn. setup 'tk' tab
+3. nnn. return to tab 1
+param: eg xx="g+r" / $1="g+r"
+
+
+<!--- vim:ft=markdown
+--->

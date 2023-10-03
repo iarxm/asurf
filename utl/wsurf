@@ -1,0 +1,140 @@
+#!/bin/env bash
+
+###############################################
+# AUTHOR: Iarom Madden
+# ANALYSIS WORKSPACE CONFIGURATION
+#		- Program Window layouts for coaching workflows
+#		- video analysis window layout
+###############################################
+
+# MAJOR TODO:
+# todo: define mpv as mpx from mpx config repo..
+
+[ -z "${1}" ] && cmd="aa" || cmd="${1}"
+shift 1
+
+nnn1_bind="Super+Shift+i"
+nnn2_bind="Alt+Shift+i"
+uview_bind="semicolon+x"
+
+r="x+a"
+rt="x+t"
+
+alias i3m='i3-msg'
+_xky() { xdotool key "$1"; }
+_i3w() { i3-msg "workspace $1"; }
+
+_init() {
+  f="$(realpath "$1")" ;}
+
+## prg defs ############################################
+
+# prg behaves
+
+_prn_winls() { wmctrl -lx | grep gimp | awk -F' ' '{print $1}'; }
+
+_rm_urg_gimp() { for w in $(_prn_win_ls); do wmctrl -i -r "$w" -b remove,demands_attention; done }
+
+_grab() { wmctrl -i -r \
+		$(wmctrl -l | grep "$1" | awk -F' ' '{print $1}') \
+		-b remove,demands_attention ;}
+
+
+# gimp
+
+_gimp() { gimp --class=gimpn & { sleep 11s; echo "stuff"; _rm_urg_gimp; } & }
+
+_gimpn() { gimp --class=gimpn "$(realpath "$nnn")" >/dev/null 2>&1 & }
+
+
+# mpv
+
+
+_mpvx() { nohup mpv --x11-name=mpv-asurf "$f" &>/dev/null 2>&1 & sleep 1s ;}
+
+_mpv_ws() { _mpvx && _grab "mpv"; }
+
+_mpv_nohup() { _i3w "3"; _mpvx; sleep 0.5s; _i3w '1' ;} #todo - dynamic workspace from i3s
+# the required delay for mpv to open is not idea; preferred solution - opens in the background on workspace 3
+
+# nnn 
+
+_nnn_nav()    { [ -n "$1" ] && { _xky "slash"; _xky "$1"; _xky "Return"; sleep 0.2; }; }
+
+_nnn_tab2()   { _xky "2"; _nnn_nav "$1"; }
+_nnn_tab2h()  { _nnn_tab2 "asciitilde"; }
+_nnn_tab2x()  { _nnn_tab2h; _nnn_nav "$1"; }
+
+_nnn_tab3()   { _xky "3"; _nnn_nav "$1"; }
+_nnn_tab3h()  { _nnn_tab3 "asciitilde"; }
+_nnn_tab3x()  { _nnn_tab3h; _nnn_nav "$1"; }
+
+_nnn_tabs_x () {
+  _nnn_nav "$r"
+  _nnn_tab2 "$xx"
+  _nnn_tab3x "$rt"
+	_xky "1" ;}
+
+_nnn_lc() { st zsh -c nnn & _nnn_tabs_x; }
+
+_nnn1() { xdotool key "$nnn1_bind"; sleep 0.3; _nnn_tabs_x; }
+
+_nnn2() { xdotool key "$nnn2_bind"; sleep 0.3; _nnn_tabs_x; }
+
+# other
+
+_uview() { xdotool key "$uview_bind"; sleep 3; }
+
+_flz() { i3s flz.ds ; sleep 3; }
+
+
+## ws's #######################
+
+_ws_init() {
+  xx="$1" ;}
+
+_ws_1a() { # nnn non float
+	_i3w "1"
+  _nnn1
+  _uview ;}
+
+_ws_1b() { # nnn non float
+	_i3w "1"
+  _nnn2
+  _uview ;}
+
+_ws_2a() { # setting up tq space
+  _i3w "2"
+	_nnn_lc 
+  _uview ;}
+
+
+# meta's #########################
+
+_ws_a() { 
+  #_gimp_ds
+  _flz
+  _ws_1a
+  i3-msg "layout tabbed"
+  _ws_1b
+}
+#_ws_float ;}
+
+# todo - launch nvim float with eval directory
+
+# ==============================
+
+case $cmd in # ws cmds
+  #xx)        _ws_float ;;
+	gn|aa)      _ws_a ;;
+	#jn)        ws_xx "jn" ;;
+	#sn)        ws_xx "sn" ;;
+esac
+
+case $cmd in # prg cmds
+	mpv) _mpv_ws ;;
+	gimp) _gimpn ;;
+esac
+
+# TODO: - setup an input file stream for this file to feed $nnn into it?
+
