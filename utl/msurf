@@ -242,7 +242,6 @@ _srt_date_r() {
 
 # in progress
 # todo: high prio - useful for segregating large files...
-
 ## Complicated by keeping together unique identifiers: keeping all files with the same identifier together. IE, 'mv' is a batch process that could apply to x number of screenshots as well as a video.
 
 _srt_siz_init() {
@@ -264,7 +263,7 @@ _srt_size_init_x() {
 _srt_siz_mv_x() { mv "$src_szx" "$dst_szx"; }
 
 _srt_siz_mv() {
-  _srt_size_init_x $@ 
+  _srt_size_init_x $@
   echo $dst_szx
   exit
   _srt_siz_mv_x ;}
@@ -272,7 +271,7 @@ _srt_siz_mv() {
 
 # loop
 
-_srt_siz_ls() { sz_ls="$(find $src_sz -mindepth 1 -maxdepth 1 -size "+$dmin" -size "-$dmax" -type f -exec realpath {} \; | grep -v jpg)"; }
+_srt_siz_ls() { sz_ls="$(find "$src_sz" -mindepth 1 -maxdepth 1 -size "+$dmin" -size "-$dmax" -type f -exec realpath {} \; | grep -v jpg)"; }
 
 _srt_siz_test() {
   _prnt_b "src: $srt_sz" "dmax: $dmax" "dmin is $dmin"
@@ -310,21 +309,21 @@ _srt_siz_all() {
 
 # sort: client profiles ############################
 
-_mv2cl_init() { #
-  dst_cl_r="$1"  # client directory
-  src_cl_r="$2"  # source
-  pattern_cl="$3*"  ; } # filename pattern
+_src_cl_ls() { find "$src_cl_r" -name "*$pattern_cl\.*"; } # -printf '%h\n'
 
-_mv2cl_x_init() {
-  src_cl_x="$1"
-  dst_cl_x="$dst_cl_r/$(_src_dname "$1")/$(basename "$1")"
+_mv2cl_init() { #
+  dst_cl_r="$1"
+  src_cl_r="$2"
+  pattern_cl="$3*" # client annotation pattern
+  dst_cl_d="$(basename "$src_cl_r")"; }
+
+_mv2cl_i_init() {
+  src_cl_i="$1"
+  dst_cl_i="$dst_cl_d/$(basename "$1")"
   mkdir -p "$dst_cl_r" ;}
 
-_src_cl_ls=$(find $src_cl_r -name "*$pattern_cl\.*") #-printf '%h\n'
+_mv2cl_x() { prnt_b "$1 -> $dst_cl_r"; _mv2cl_i_init "$1"; mv "$src_cl_i" "$dst_cl_i" ;} # session(y) -> client(x)
 
-_src_dname() { dirname "$1" | sed 's,^\(.*/\)\?\([^/]*\),\2,'; } # move to top of file?
-
-_mv2cl_x() { prnt_b "$1 -> $dst_cl_r"; mv "$src_cl_i" "$dst_cl_x" ;} # session(y) -> client(x)
 _mv2cl_lp() { for i in $(_src_cl_ls); do _mv2cl_x "$i"; done ; } # todo: use _mv ?
 
 _mv2cl() {
@@ -377,15 +376,27 @@ _all_xc () {
 ## CASES #########################################
 
 _help() {
-  printf "TODO"
+  _prnt_b "TODO"
+  exit
 }
+
+_no_arg() {
+  _prnt_b "Arguments required"
+  exit
+  # todo - print simplified cli cmd help structure
+}
+
+[ -n "$1" ] && { cmd="${1}"; shift 1; } || cmd="noarg"
+
+case $cmd in
+  noarg)            _no_arg ;;
+  help)             _help ;;
+esac
+
 
 _prnt_h "INITIALISE"
 
-cmd="${1}" && [ -n "$cmd" ] && shift 1
-
 case $cmd in
-  help)             _help ;;
   # C
   srt.size)         _srt_size "$@" ;;
   sz10)             _srt_sz10 "$@" ;;
