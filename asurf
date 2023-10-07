@@ -2,21 +2,21 @@
 #
 # #################################
 # AUTHOR: IAROM MADDEN future@iarom.org
-#
-# Centralise calling of various tools
-#
+# Centralise calling of project tools
 # #################################
 
 # init
 
-cmd="$1" && shift 1
+[ -n "$1" ] && { cmd="$1"; shift 1; } || cmd="a"
 
 
 # cmd #############################
 
 case $cmd in
   m) msurf $@ ;;
+  b) msurf "all" ;;
   w) wsurf $@ ;;
+  a) wsurf "a";;
   *) nnn ;;
 esac
 
