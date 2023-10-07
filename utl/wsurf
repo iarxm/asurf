@@ -117,6 +117,7 @@ _ws_a() {
   _ws_1a
   i3-msg "layout tabbed"
   _ws_1b
+  i3-msg "layout tabbed"
 }
 #_ws_float ;}
 
@@ -126,7 +127,7 @@ _ws_a() {
 
 case $cmd in # ws cmds
   #xx)        _ws_float ;;
-	gn|aa)      _ws_a ;;
+	gn|a|aa)      _ws_a ;;
 	#jn)        ws_xx "jn" ;;
 	#sn)        ws_xx "sn" ;;
 esac
