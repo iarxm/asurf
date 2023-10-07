@@ -1,2 +1,2 @@
 #!/bin/env bash
-mpv --config-dir=~/.config/mpx
+mpv --config-dir="$HOME/.config/mpx" "$@"
