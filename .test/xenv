@@ -1,5 +1,5 @@
 #!/bin/env bash
 # set up testing environment
-px=$HOME/dsrc/asurf
-pu=$px/utl
+px="$(pwd)"
+pu="$px/utl"
 export PATH="$px:$pu:$PATH"
