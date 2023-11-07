@@ -24,7 +24,7 @@ rx="$HOME/xa" # root work tree
 ry="/data/ux" # all years / trees
 dst_i_def="ai"
 regx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
-sd_mntx="/home/iao/zm/zm"
+sd_mntx="/home/$USER/jf/zm"
 
 
 # init univ ##########################################
@@ -44,8 +44,8 @@ sd_bkp=""
 
 # workspace
 r="$(realpath "$rx")" # root work tree
-dst_i="" # inputed sub dir
-dst=""  # dst full path
+dst_i=""              # inputed sub dir
+dst=""                # dst full path
 
 
 # funcs ######################################
@@ -98,7 +98,7 @@ _test_dirx()  { [ -n "$2" ] && _test_dir "$1" "$2" "$3"; }
 
 _rs()         { _prnt_h "rsync: $1 ---> $2"; rsync -avP "$1" "$2" ; _prnt_ln; }
 
-_rc_syc()     { src="$1"; dst="$2"; shift 2; rclone sync -vP "$@" --track-renames "$src" "$dst"; }
+_rc_syc()     { src="$1"; dst="$2"; shift 2; rclone sync -vP --track-renames --create-empty-src-dirs $@ "$src" "$dst"; }
 
 _mv_loop()    { while IFS= read -r line; do _prnt_b "$3: $line -> $2 "; mv "$line" "$2/"; done <<< "$1"; }
 
@@ -155,7 +155,6 @@ _sd_srt() { _init_sd "$@"; _sd_srt_x; }
 # meta
 
 _sd_mvx () { _init_sd "$@"; _sd_rs; }
-
 
 
 # srt: date and dirnames ################################
@@ -309,20 +308,22 @@ _srt_siz_all() {
 
 # sort: client profiles ############################
 
-_src_cl_ls() { find "$src_cl_r" -name "*$pattern_cl\.*"; } # -printf '%h\n'
+_src_cl_ls() { find "$src_cl_r" -mindepth 1 -maxdepth 1 -name "*$pattern_cl\.*"; } # -printf '%h\n'
 
 _mv2cl_init() { #
-  dst_cl_r="$1"
-  src_cl_r="$2"
+  src_cl_r="$1"
+  dst_cl_r="$2"
   pattern_cl="$3*" # client annotation pattern
+  mkdir -p "$dst_cl_r"
   dst_cl_d="$(basename "$src_cl_r")"; }
 
 _mv2cl_i_init() {
   src_cl_i="$1"
-  dst_cl_i="$dst_cl_d/$(basename "$1")"
-  mkdir -p "$dst_cl_r" ;}
+  dst_cl_rx="$dst_cl_r/$dst_cl_d"
+  dst_cl_i="$dst_cl_rx/$(basename "$1")"
+  mkdir -p "$dst_cl_rx" ;}
 
-_mv2cl_x() { prnt_b "$1 -> $dst_cl_r"; _mv2cl_i_init "$1"; mv "$src_cl_i" "$dst_cl_i" ;} # session(y) -> client(x)
+  _mv2cl_x() { _mv2cl_i_init "$1"; _prnt_b "$1 -> $dst_cl_i"; mv "$src_cl_i" "$dst_cl_i" ;} # session(y) -> client(x)
 
 _mv2cl_lp() { for i in $(_src_cl_ls); do _mv2cl_x "$i"; done ; } # todo: use _mv ?
 
@@ -346,13 +347,15 @@ _syc_init_yr() {
   src_syc="$ry/dsx$yr/$i" 
   dst_syc="$r_c/dsz/$yr/$i" ;}
 
-_syc_a () { _prnt_h "rclone sync to < $r_c >"; _rc_syc "$src_syc" "$dst_syc" ; }
+_syc_a ()   { _prnt_h "rclone sync to < $r_c >"; _rc_syc "$src_syc" "$dst_syc" ; }
 
-_syc_x() { _syc_init "$@"; _syc_a; }
+_syc_x()    { _syc_init "$@"; _syc_a; }
 
 _syc_g1x () { _syc_x "g1:/xdsa" "$1" ; }
 
-_syc_o1x () { _syc_x "o1:/xdsa" "$1" ; }
+_syc_o1x () { _syc_x "o1:/xa" "$1" ; }
+
+_syc_o1y () { _syc_x "o1:/xdsa" "$1" ; }
 
 _syc_dvb () { _syc_x "$HOME/zm/dvb/.rcl/xds/" "$1" ; } # external device
 
@@ -398,23 +401,23 @@ _prnt_h "INITIALISE"
 
 case $cmd in
   # C
-  srt.size)         _srt_size "$@" ;;
-  sz10)             _srt_sz10 "$@" ;;
-  sz60)             _srt_sz60 "$@" ;;
+  srt.size)         _srt_size  "$@" ;;
+  sz10)             _srt_sz10  "$@" ;;
+  sz60)             _srt_sz60  "$@" ;;
   sz200)            _srt_sz200 "$@" ;;
-  sd.srt)           _sd_srt "$@";;
+  sd.srt)           _sd_srt    "$@";;
   srt.dir.i)        _sort_date_dir "$@" ;; # sort arg dir
   sy.dvb)           _syc_ext_dvb "$@" ;;
-  sy.y21)           _syc_year "$@" ;;
+  sy.y21)           _syc_year  "$@" ;;
   # B
-  sy.g1)            _syc_g1x "$@" ;;
-  sy.o1)            _syc_o1x "$@" ;;
+  sy.g1)            _syc_g1x   "$@" ;;
+  sy.o1)            _syc_o1x   "$@" ;;
   # A
-  cl|client.x)      _mv2cl "$@" ;;
-  sd.mv)            _sd_mvx "$@" ;;
-  sy)               _syc_o1x "$@" ;;
-  all.b)            _all_xb "$@" ;;
-  all)              _all_xc  "$@" ;;
+  cl|client.x)      _mv2cl     "$@" ;;
+  sd.mv)            _sd_mvx    "$@" ;;
+  sy|sync|syc)      _syc_o1x   "$@" ;;
+  all.b)            _all_xb    "$@" ;;
+  a|all)            _all_xc    "$@" ;;
 esac
 
 exit
@@ -423,12 +426,10 @@ exit
 # Previous use of FIFO's:
 #_prnt_b "$sd_dcim: exists 'dcim -> fifo'"
   #_prnt_c "$sd_dcim" > "$fifo_ds" # not req now?
-
 _srt_date_r_test() { #1. check srs dirs
   # not quite necessary - about same resources as just running the code
 	[ ! -n "$dir_ls" ] && { prnt_b "dirs non-existent; return"; return; }
 	prnt_b "Source dir's exist:\n $dir_ls" ;}
-
 # sd
   sd.test.exists)   _test_sd_exists ;;
   sd.test.fifo)     _test_sd_fifo ;;
