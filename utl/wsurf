@@ -17,7 +17,8 @@ nnn1_bind="Super+Shift+i"
 nnn2_bind="Alt+Shift+i"
 uview_bind="semicolon+x"
 
-r="x+a"
+r="k+f"
+ra="x+a"
 rt="x+t"
 
 alias i3m='i3-msg'
@@ -60,6 +61,7 @@ _mpv_nohup() { _i3w "3"; _mpvx; sleep 0.5s; _i3w '1' ;} #todo - dynamic workspac
 # nnn 
 
 _nnn_nav()    { [ -n "$1" ] && { _xky "slash"; _xky "$1"; _xky "Return"; sleep 0.2; }; }
+_nnn_nav_r() { _nnn_nav "$r"; _nnn_nav "$ra"; }
 
 _nnn_tab2()   { _xky "2"; _nnn_nav "$1"; }
 _nnn_tab2h()  { _nnn_tab2 "asciitilde"; }
@@ -70,9 +72,9 @@ _nnn_tab3h()  { _nnn_tab3 "asciitilde"; }
 _nnn_tab3x()  { _nnn_tab3h; _nnn_nav "$1"; }
 
 _nnn_tabs_x () {
-  _nnn_nav "$r"
+  _nnn_nav_r "$r"
   _nnn_tab2 "$xx"
-  _nnn_tab3x "$rt"
+  _nnn_tab3x "$r"; _nnn_nav "$rt"
 	_xky "1" ;}
 
 _nnn_lc() { st zsh -c nnn & _nnn_tabs_x; }

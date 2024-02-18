@@ -20,11 +20,13 @@
 
 # init cfg
 
-rx="$HOME/xa" # root work tree
+# todo - set via environment variables..
+
+rx="$HOME/kf/xa" # root work tree
 ry="/data/ux" # all years / trees
 dst_i_def="ai"
 regx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
-sd_mntx="/home/iao/zm/zm"
+sd_mntx="$HOME/kf/zm/zm"
 
 
 # init univ ##########################################
