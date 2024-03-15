@@ -1,8 +1,10 @@
 #!/bin/bash
+## TODO MAJOR: remove from project and install i3s as submodule to asurf
+
+focus_fixer() {
 # fix focus stealing windows in i3 - tabbed preview activity. in i3s now?
 # todo: remove i3scratch dependencies
 
-focus_fixer() {
 	class="$1"
 	wid_x=$(xdotool search --class "$class")
 	echo "$wid_x"
