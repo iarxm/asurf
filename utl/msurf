@@ -20,11 +20,13 @@
 
 # init cfg
 
-rx="$HOME/xa" # root work tree
+# todo - set personal configs via external file
+
+rx="$HOME/kf/xa" # root work tree
 ry="/data/ux" # all years / trees
 dst_i_def="ai"
 regx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
-sd_mntx="/home/$USER/jf/zm"
+sd_mntx="$HOME/kf/zm/zm"
 
 
 # init univ ##########################################
@@ -323,7 +325,7 @@ _mv2cl_i_init() {
   dst_cl_i="$dst_cl_rx/$(basename "$1")"
   mkdir -p "$dst_cl_rx" ;}
 
-  _mv2cl_x() { _mv2cl_i_init "$1"; _prnt_b "$1 -> $dst_cl_i"; mv "$src_cl_i" "$dst_cl_i" ;} # session(y) -> client(x)
+_mv2cl_x() { _mv2cl_i_init "$1"; _prnt_b "$1 -> $dst_cl_i"; mv "$src_cl_i" "$dst_cl_i" ;} # session(y) -> client(x)
 
 _mv2cl_lp() { for i in $(_src_cl_ls); do _mv2cl_x "$i"; done ; } # todo: use _mv ?
 
