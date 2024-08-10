@@ -7,7 +7,6 @@
 #		- video analysis window layout
 ###############################################
 
-# MAJOR TODO:
 # todo: define mpv as mpx from mpx config repo..
 
 [ -z "${1}" ] && cmd="aa" || cmd="${1}"

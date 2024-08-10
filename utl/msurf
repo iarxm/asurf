@@ -20,11 +20,11 @@
 
 # init cfg
 
-# todo - set personal configs via external file
+# todo - set personal configs via external file (migrate to python and use a config modulde...)
 
 rx="$HOME/kf/xa" # root work tree
 ry="/data/ux" # all years / trees
-dst_i_def="ai"
+dst_i_def="aaii"
 regx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
 sd_mntx="$HOME/kf/zm/zm"
 
