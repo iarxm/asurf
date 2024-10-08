@@ -2,7 +2,7 @@
 
 # ============================================
 #
-# AUTHOR: Iarom Madden
+# author: iarom Madden mail@iarom.org
 #
 # FILE PROCESSING/MOVING
 # - Retrieving from sd. Moving and sorting files into session and client dir's. Distributing via rclone
@@ -353,13 +353,13 @@ _syc_a ()   { _prnt_h "rclone sync to < $r_c >"; _rc_syc "$src_syc" "$dst_syc" ;
 
 _syc_x()    { _syc_init "$@"; _syc_a; }
 
-_syc_g1x () { _syc_x "g1:/xdsa" "$1" ; }
+_syc_g1x () { _syc_x "g1:/x/xa" "$1" ; }
 
-_syc_o1x () { _syc_x "o1:/xa" "$1" ; }
+_syc_o1x () { _syc_x "o1:/x/xa" "$1" ; }
 
-_syc_o1y () { _syc_x "o1:/xdsa" "$1" ; }
+_syc_o1y () { _syc_x "o1:/x/xb" "$1" ; }
 
-_syc_dvb () { _syc_x "$HOME/zm/dvb/.rcl/xds/" "$1" ; } # external device
+_syc_dvb () { _syc_x "$HOME/zm/dvb/.rcl/xa/" "$1" ; } # external device
 
 
 # macros #########################################
