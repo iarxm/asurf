@@ -1,22 +1,18 @@
-#!/bin/sh
+#!/bin/env bash
 
-# #################################
-# AUTHOR: IAROM MADDEN future@iarom.org
-# Centralise calling of project tools
-# #################################
+# Iarom Madden future@iarom.org
+# centralise calling of asurf tools
 
 # init
 
 [ -n "$1" ] && { cmd="$1"; shift 1; } || cmd="a"
 
 
-# cmd #############################
-
 case $cmd in
-  m) msurf $@ ;;
-  b) msurf "all" ;;
-  w) wsurf $@ ;;
-  a) wsurf "a";;
-  *) nnn ;;
+    m) msurf $@ ;;
+    b) msurf "all" ;;
+    w) wsurf $@ ;;
+    a) wsurf "a";;
+    *) nnn ;;
 esac
 

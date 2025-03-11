@@ -1,9 +1,7 @@
 #!/bin/bash
-# =========================
-# AUTHOR: Iarom Madden
+# Iarom Madden
 # asurf ALIASES/SHORTCUTS/FUNCTIONS
-# 	- Aliases as temporary/hacky implementation of autocomp
-# ============================
+# aliases as temporary/hacky implementation of autocomp
 msurf="msurf" # moving tool name
 wsurf="wsurf" #
 alias dsm.all='$msurf sd.all'
