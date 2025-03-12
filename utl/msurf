@@ -2,10 +2,10 @@
 
 # Iarom Madden mail@iarom.org
 #
-# FILE PROCESSING/MOVING
+# file processing
 # - retrieving from sd. moving and sorting files into session and client dir's. distributing via rclone 2 cloud
 #
-# FUNCTIONALITY
+# functions
 # - cp: sd/dcim -> wspace
 # - rc: wsapce -> cloud
 # - sd detection
@@ -19,7 +19,7 @@
 # - [ ] set personal configs via external file (migrate to python and use a config modulde...)
 
 rx="/dat/ux/xa" # root work tree
-ry="/dat/ux" # all years / trees
+ry="/dat/ux"    # all years / trees
 dst_i_def="aaii"
 rgx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
 sd_srt_patterns='PANA'
@@ -290,7 +290,7 @@ _srt_date_ini_x ()
 _srt_date_ini_y()
 {
     sbase=$(dirname "$f" | xargs dirname)
-    sdirx="${dst_srt_date}${xm}.${srt_sfx}"
+    sdirx="${dst_srt_date}${xm}-${srt_sfx}"
     sdir="${sbase}/${sdirx}"
     dst_srt="${sdir}/$(basename "${f}")"
 }
@@ -391,7 +391,7 @@ _srt_siz_ini()
     dmin="$1"
     dmax="$2"
     src_sz="$3"
-    prfx="d$dmax."
+    prfx="d$dmax-"
 }
 
 # mv
@@ -408,8 +408,8 @@ _srt_siz_mv_x() { mv "$src_szx" "$dst_szx"; }
 
 _srt_siz_mv()
 {
-    _srt_size_ini_x $@
-    echo $dst_szx
+    _srt_size_ini_x "${@}"
+    echo "${dst_szx}"
     exit
     _srt_siz_mv_x
 }
@@ -422,6 +422,7 @@ _srt_siz_ls_x()
         -mindepth 1 -maxdepth 1 \
         -size "+$dmin" -size "-$dmax" \
         -type f -exec realpath {} \; |\
+        \
         grep -v jpg
 }
 
@@ -484,47 +485,47 @@ _srt_siz_all()
 
 _src_cl_ls()
 {
-    find "$src_cl_r" \
-        -mindepth 1 -maxdepth 1 -name "*$pattern_cl\.*"
+    find "${src_cl_r}" \
+        -mindepth 1 -maxdepth 1 -name "*${pattern_cl}\.*"
 }
 
 _mv2cl_ini()
 {
-    src_cl_r="$1"
-    dst_cl_r="$2"
-    pattern_cl="$3*" # client annotation pattern
-    mkdir -p "$dst_cl_r"
-    dst_cl_d="$(basename "$src_cl_r")"
+    src_cl_r="${1}"
+    dst_cl_r="${2}"
+    pattern_cl="${3}*" # client annotation pattern
+    mkdir -p "${dst_cl_r}"
+    dst_cl_d="$(basename "${src_cl_r}")"
+    dst_cl_rx="${dst_cl_r}/${dst_cl_d}"
+    mkdir -p "${dst_cl_rx}"
 }
 
-_mv2cl_i_ini()
+_mv2cl_x_ini()
 {
-    src_cl_i="$1"
-    dst_cl_rx="$dst_cl_r/$dst_cl_d"
-    dst_cl_i="$dst_cl_rx/$(basename "$1")"
-    mkdir -p "$dst_cl_rx"
+    src_cl_i="${1}"
+    dst_cl_i="${dst_cl_rx}/$(basename "${src_cl_i}")"
 }
 
 _mv2cl_x()
 {
     # session(y) -> client(x)
-    _mv2cl_i_ini "$1"
-    _prn_b "$1 -> $dst_cl_i"
+    _mv2cl_x_ini "${1}"
+    _prn_b "${src_cl_i} -> ${dst_cl_i}"
     mv "$src_cl_i" "$dst_cl_i"
 }
 
 _mv2cl_lp()
 {
-    # todo: use _mv ?
+    _prn_b "moving pattern ${pattern}"
     for i in $(_src_cl_ls)
     do
-        _mv2cl_x "$i"
+        _mv2cl_x "${i}"
     done
 }
 
 _mv2cl()
 {
-    _mv2cl_ini "$@"
+    _mv2cl_ini "${@}"
     _mv2cl_lp
 }
 
@@ -566,8 +567,8 @@ _syc_22_()
 
 _all_xa ()
 {
-    _srt_sd ${@}
-    _sd_mvx ${@}
+    _srt_sd "${@}"
+    _sd_mvx "${@}"
 }
 
 _all_xb ()
@@ -597,14 +598,7 @@ _no_arg()
 
 _main()
 {
-    if [ -n "$1" ]
-    then
-        cmd="${1}"
-        cmd_sub="${2}"
-        shift 2
-    else
-        cmd="noarg"
-    fi
+    cmd="${1}" && shift 1
 
     _prn_h "initialise msurf"
 
@@ -613,6 +607,7 @@ _main()
         sd-prn|sdprn)     _sd_prn     "${@}" ;;
         sd-mv|sdmv)       _sd_mvx     "${@}" ;;
         sr|srt|sz)
+            cmd_sub="${1}" && shift 1
             case ${cmd_sub} in
                 size)   _srt_size     "${@}" ;;
                 s10)    _srt_sz10     "${@}" ;;
@@ -623,6 +618,7 @@ _main()
             esac
             ;;
         sy|sync|syc)
+            cmd_sub="${1}" && shift 1
             case ${cmd_sub} in
                 y21)    _syc_year     "${@}" ;;
                 dvb)    _syc_dv_b     "${@}" ;;
@@ -632,18 +628,19 @@ _main()
             esac
             ;;
         m|macro|a|al)
+            cmd_sub="${1}" && shift 1
             case ${cmd_sub} in
                 a)      _all_xa    "${@}"   ;;
                 b)      _all_xb    "${@}"   ;;
                 c)      _all_xc    "${@}"   ;;
             esac
             ;;
-        noarg)   _no_arg ;;
-        help)    _help   ;;
+        help)      _help   ;;
+        *|noarg)   _no_arg ;;
     esac
 }
 
-_main ${@}
+_main "${@}"
 
 #fifo_ds="$XDG_CACHE_HOME/asurf/fifo.dsmv" # - [ ] setup fifo based system?
 #_ini_sd_bkp() { sd_bkls="$(_find_d "$sd_dcim")"; }
