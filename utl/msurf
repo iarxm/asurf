@@ -1,10 +1,10 @@
 #!/bin/env bash
 
 # Iarom Madden mail@iarom.org
-#
+
 # file processing
 # - retrieving from sd. moving and sorting files into session and client dir's. distributing via rclone 2 cloud
-#
+
 # functions
 # - cp: sd/dcim -> wspace
 # - rc: wsapce -> cloud
@@ -253,7 +253,7 @@ _prn_b_srt()    { _prn_b "sorting file [ ${src_srt_i} ]"; }
 
 _prn_srt_r()    { _prn_b "dirname suffix?"; }
 
-_srt_date_ini() { src_srt="$1"; _prn_h_srt; }
+_srt_date_ini() { src_srt="${1}"; _prn_h_srt; }
 
 _srt_date_read()
 {
@@ -297,14 +297,14 @@ _srt_date_ini_y()
 
 _srt_date_mv_x()
 {
-    _prn_b "$f -> $dst_srt"
-    mkdir -p "$sdir"
-    mv "$f" "$dst_srt"
+    _prn_b "${f} -> ${dst_srt}"
+    mkdir -p "${sdir}"
+    mv "${f}" "${dst_srt}"
 }
 
 _srt_date_mv()
 {
-    _srt_date_ini_x "$1"
+    _srt_date_ini_x "${1}"
     _srt_date_ini_y
     _srt_date_mv_x
 }
@@ -313,7 +313,7 @@ _srt_date_mv()
 
 _srt_date_ini_i()
 {
-    src_srt_i="$1"
+    src_srt_i="${1}"
     _prn_b_srt
 }
 
@@ -374,7 +374,7 @@ _srt_date_r()
 _srt_sd()
 {
     [ -n "${sd_dcim}" ] || _sd_ini
-    _srt_date_r "$sd_dcim"
+    _srt_date_r "${sd_dcim}"
 }
 
 # srt: size
@@ -388,23 +388,23 @@ _srt_sd()
 
 _srt_siz_ini()
 {
-    dmin="$1"
-    dmax="$2"
-    src_sz="$3"
-    prfx="d$dmax-"
+    dmin="${1}"
+    dmax="${2}"
+    src_sz="${3}"
+    prfx="d${dmax}-"
 }
 
 # mv
 
 _srt_size_ini_x()
 {
-  src_szx="$f"
-  dst_szx="$prfx$base1" 
+  src_szx="${f}"
+  dst_szx="${prfx}${base1}" 
   # todo - extract full path from $src_sz ... 
   # similar to in srt_date..
  }
 
-_srt_siz_mv_x() { mv "$src_szx" "$dst_szx"; }
+_srt_siz_mv_x() { mv "${src_szx}" "${dst_szx}"; }
 
 _srt_siz_mv()
 {
@@ -418,9 +418,9 @@ _srt_siz_mv()
 
 _srt_siz_ls_x()
 {
-    find "$src_sz" \
+    find "${src_sz}" \
         -mindepth 1 -maxdepth 1 \
-        -size "+$dmin" -size "-$dmax" \
+        -size "+${dmin}" -size "-${dmax}" \
         -type f -exec realpath {} \; |\
         \
         grep -v jpg
@@ -430,10 +430,10 @@ _srt_siz_ls() { sz_ls="$(_srt_siz_ls_x)"; }
 
 _srt_siz_test()
 {
-    _prn_b "src: $srt_sz" "dmax: $dmax" "dmin: $dmin"
-    _prn_b "matched files:" "$sz_ls"
+    _prn_b "src: ${srt_sz}" "dmax: ${dmax}" "dmin: ${dmin}"
+    _prn_b "matched files:" "${sz_ls}"
     
-    [ -d "$src_x" ] && return
+    [ -d "${src_x}" ] && return
     _prn_b "no directory; exiting"
     exit 1
 }
@@ -443,7 +443,7 @@ _srt_siz_confirm()
     printf "Rename files based on size? y/n \n"
     read -r confirm
     
-    [ "$confirm" = "y" ] && return
+    [ "${confirm}" = "y" ] && return
     printf "Exiting on -no-"
     exit 1
 }
@@ -452,15 +452,15 @@ _srt_siz_lpx()
 {
     while read -r f
     do
-        _srt_siz_mv "$f"
-    done <<< "$sz_ls"
+        _srt_siz_mv "${f}"
+    done <<< "${sz_ls}"
 }
 
 # control
 
 _srt_size()
 {
-    _srt_siz_ini "$@"
+    _srt_siz_ini "${@}"
     _srt_siz_ls
     _srt_siz_test
     _srt_sia_confirm
@@ -469,16 +469,16 @@ _srt_size()
 
 # meta sort
 
-_srt_sz10()  { _srt_size 0M 11M "$@" ; }
-_srt_sz60()  { _srt_size 30M 61M "$@" ; }
-_srt_sz200() { _srt_size 60M 200M "$@" ; }
+_srt_sz10()  { _srt_size 0M  11M  "${@}" ; }
+_srt_sz60()  { _srt_size 30M 61M  "${@}" ; }
+_srt_sz200() { _srt_size 60M 200M "${@}" ; }
 
 _srt_siz_all()
 {
-    sort_size 0M 11M "$1"
-    sort_size 10M 31M "$1"
-    sort_size 30M 61M "$1"
-    sort_size 60M 200M "$1"
+    sort_size 0M  11M  "${1}"
+    sort_size 10M 31M  "${1}"
+    sort_size 30M 61M  "${1}"
+    sort_size 60M 200M "${1}"
 }
 
 # sort: client profiles
@@ -494,10 +494,19 @@ _mv2cl_ini()
     src_cl_r="${1}"
     dst_cl_r="${2}"
     pattern_cl="${3}*" # client annotation pattern
-    mkdir -p "${dst_cl_r}"
+    
     dst_cl_d="$(basename "${src_cl_r}")"
     dst_cl_rx="${dst_cl_r}/${dst_cl_d}"
-    mkdir -p "${dst_cl_rx}"
+    src_cl_ls=$(_src_cl_ls)
+    
+    if [ -n "${src_cl_ls}" ]
+    then
+        mkdir -p "${dst_cl_r}"
+        mkdir -p "${dst_cl_rx}"
+    else
+        _prn_b "nothing to move"
+        return 1
+    fi
 }
 
 _mv2cl_x_ini()
@@ -511,13 +520,13 @@ _mv2cl_x()
     # session(y) -> client(x)
     _mv2cl_x_ini "${1}"
     _prn_b "${src_cl_i} -> ${dst_cl_i}"
-    mv "$src_cl_i" "$dst_cl_i"
+    mv "${src_cl_i}" "${dst_cl_i}"
 }
 
 _mv2cl_lp()
 {
     _prn_b "moving pattern ${pattern}"
-    for i in $(_src_cl_ls)
+    for i in ${src_cl_ls}
     do
         _mv2cl_x "${i}"
     done
@@ -526,6 +535,7 @@ _mv2cl_lp()
 _mv2cl()
 {
     _mv2cl_ini "${@}"
+    [ $? -eq 1 ] && return
     _mv2cl_lp
 }
 
@@ -651,3 +661,4 @@ _main "${@}"
     #_prn_h "sd bkp"
     #_mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"
 #}
+
