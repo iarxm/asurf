@@ -1,6 +1,7 @@
 #!/bin/bash
 # Iarom Madden
 # asurf ALIASES/SHORTCUTS/FUNCTIONS
+# keep personal references outside of project
 # aliases as temporary/hacky implementation of autocomp
 msurf="msurf" # moving tool name
 wsurf="wsurf" #
