@@ -13,8 +13,12 @@ install-mpv:
 
 install:
 	install -d $(BINDIR)
-	install -m 755 asurf $(TOOLS) $(BINDIR)
+	install -m 755 asurf $(BINDIR)
+	install -m 755 $(TOOLS) $(BINDIR)
 
-install-test:
+uninstall:
+	rm $(addprefix $(BINDIR)/, $(notdir $(TOOLS)))
+
+install-user:
 	# user level installation for testing without sudo
 	$(MAKE) install PREFIX="$(HOME)/.local/usr"
