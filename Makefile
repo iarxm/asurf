@@ -17,7 +17,11 @@ install:
 	install -m 755 $(TOOLS) $(BINDIR)
 
 uninstall:
-	rm $(addprefix $(BINDIR)/, $(notdir $(TOOLS)))
+	rm -f $(addprefix $(BINDIR)/, $(notdir $(TOOLS)))
+	rm $(BINDIR)/asurf
+
+uninstall-user:
+	$(MAKE) uninstall PREFIX="$(HOME)/.local/usr"
 
 install-user:
 	# user level installation for testing without sudo
