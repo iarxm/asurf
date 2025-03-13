@@ -24,5 +24,6 @@ uninstall-user:
 	$(MAKE) uninstall PREFIX="$(HOME)/.local/usr"
 
 install-user:
-	# user level installation for testing without sudo
+	# user level installation for testing without sudo - call install from nvim with ease
 	$(MAKE) install PREFIX="$(HOME)/.local/usr"
+
