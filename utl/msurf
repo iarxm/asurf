@@ -18,34 +18,39 @@
 
 # - [ ] set personal configs via external file (migrate to python and use a config modulde...)
 
-rx="/dat/ux/xa" # root work tree
-ry="/dat/ux"    # all years / trees
-dst_i_def="aaii"
-rgx_sdx='/SD_.*|/sd\..*|/LUMIX|/9016-4EF8/|'
-sd_srt_patterns='PANA'
-sdx_mntx="${HOME}/.local/share/aaa/mnt/zm"
-sd_bkp_suffix="bkp"
-rep_o1_x="o1:/x/a/ux/xa"
-rep_o1_y="o1:/x/a/ux/xb"
-rep_g1_x="g1:/x/a/ux/xa"
-rep_dv_b="/mnt/dvb/zb/rcl/xa/"
+_ini()
+{
+    # loaded via config file
+    declare -g rx # root work tree
+    declare -g ry    # all years / trees
+    declare -g dst_i_def
+    declare -g rgx_sdx
+    declare -g sd_srt_patterns
+    declare -g sdx_mntx
+    declare -g sd_bkp_suffix
+    declare -g rep_o1_x
+    declare -g rep_o1_y
+    declare -g rep_g1_x
+    declare -g rep_dv_b
 
-# init univ
+    source "${XDG_CONFIG_HOME}/asurf/env"
 
-psep=""
-prefix="MS"
-rgx_sd="${rgx_sdx}"
-sd_mnt="${sdx_mntx}"
+    # set later
+    declare -g psep=""
+    declare -g prefix="MS"
+    declare -g rgx_sd="${rgx_sdx}"
+    declare -g sd_mnt="${sdx_mntx}"
 
-sd_i=""    # sd path as arg
-sd_m=""    # sd path auto matched
-sd_r=""    # sd root as final sd var
-sd_dcim="" # dcim
-sd_bkp=""
+    declare -g sd_i=""    # sd path as arg
+    declare -g sd_m=""    # sd path auto matched
+    declare -g sd_r=""    # sd root as final sd var
+    declare -g sd_dcim="" # dcim
+    declare -g sd_bkp=""
 
-r="$(realpath "${rx}")" # root work tree
-dst_i=""                # inputed sub dir
-dst=""                  # dst full path
+    declare -g r="$(realpath "${rx}")" # root work tree
+    declare -g dst_i=""                # inputed sub dir
+    declare -g dst=""                  # dst full path
+}
 
 _prn_l()     { printf "${prefix}:%s\n" " "; }
 
@@ -82,8 +87,12 @@ _a2b()
 
 _find_d_grp()
 {
-    _find_d "$1" |\
-        grep -E "$2"
+    find "${1}" \
+        -mindepth 1 -maxdepth 1 -type d \
+        -regextype posix-extended \
+        -regex ".*${2}" \
+        -exec realpath {} \;
+            #| grep -E "${2}"
 }
 
 _find_d()
@@ -219,20 +228,18 @@ _sd_bkp_ini()
     _prn_h "sd bkp"
 }
 
-_sd_bkp_lp()
+_sd_bkp()
 {
+    [ -d "${sd_dcim}" ] || _sd_ini
     _sd_bkp_ini
     _mv_loop "${sd_bkp_src}" "${sd_bkp}"
-}
-
-_sd_bkp() {
-    _sd_bkp_lp
 }
 
 _sd_mvx ()
 {
     _sd_ini "${@}"
     _sd_rs
+    _sd_bkp
 }
 
 # srt: date and dirnames
@@ -575,25 +582,29 @@ _syc_22_()
 
 # macros
 
-_all_xa ()
+_all_xa()
 {
     _srt_sd "${@}"
     _sd_mvx "${@}"
 }
 
-_all_xb ()
+_all_xb()
 {
     _all_xa "${@}"
     _sd_bkp
 }
 
-_all_xc ()
+_all_xc()
 {
     _all_xb "${@}"
     _syc_o1_x
 }
 
-## main
+_all_sd()
+{
+    _srt_sd
+    _sd_mvx "${@}"
+}
 
 _help()
 {
@@ -610,10 +621,13 @@ _main()
 {
     cmd="${1}" && shift 1
 
+    _ini
+
     _prn_h "initialise msurf"
 
     case ${cmd} in
         cl|client-x)      _mv2cl      "${@}" ;;
+        sd-bkp|sdbkp)     _sd_bkp     "${@}" ;;
         sd-prn|sdprn)     _sd_prn     "${@}" ;;
         sd-mv|sdmv)       _sd_mvx     "${@}" ;;
         sr|srt|sz)
@@ -643,6 +657,7 @@ _main()
                 a)      _all_xa    "${@}"   ;;
                 b)      _all_xb    "${@}"   ;;
                 c)      _all_xc    "${@}"   ;;
+                sd)     _all_sd    "${@}"   ;;
             esac
             ;;
         help)      _help   ;;
@@ -661,4 +676,3 @@ _main "${@}"
     #_prn_h "sd bkp"
     #_mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"
 #}
-
