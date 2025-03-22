@@ -505,13 +505,14 @@ _mv2cl_ini()
     dst_cl_d="$(basename "${src_cl_r}")"
     dst_cl_rx="${dst_cl_r}/${dst_cl_d}"
     src_cl_ls=$(_src_cl_ls)
+    echo "src $src_cl_r"
     
     if [ -n "${src_cl_ls}" ]
     then
         mkdir -p "${dst_cl_r}"
         mkdir -p "${dst_cl_rx}"
     else
-        _prn_b "nothing to move"
+        _prn_b "nothing to move of pattern ${pattern_cl}"
         return 1
     fi
 }
@@ -532,7 +533,7 @@ _mv2cl_x()
 
 _mv2cl_lp()
 {
-    _prn_b "moving pattern ${pattern}"
+    _prn_b "moving pattern ${pattern_cl}"
     for i in ${src_cl_ls}
     do
         _mv2cl_x "${i}"
