@@ -1,6 +1,8 @@
 #!/bin/bash
-# Iarom Madden
+
+# iarom madden mail@iarom.org
 # asurf ALIASES/SHORTCUTS/FUNCTIONS
+
 # keep personal references outside of project
 # aliases as temporary/hacky implementation of autocomp
 msurf="msurf" # moving tool name
@@ -8,8 +10,8 @@ wsurf="wsurf" #
 alias dsm.all='$msurf sd.all'
 alias dsm.syc='$msurf sy'
 alias dsm.sdtr='$msurf sd transfer'
+
 ## annotations
 #alias gimpn='$wsurf gimp'
 #alias srfngl='$wsurf'
 #alias anot='flameshot gui'
-

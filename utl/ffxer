@@ -1,7 +1,9 @@
 #!/bin/bash
 
-focus_fixer() {
-    # fix focus stealing windows in i3 - tabbed preview activity. in i3s now?
+focus_fixer()
+{
+    # fix focus stealing windows in i3 - tabbed preview activity.
+    # in i3s now?
     # - [ ] remove i3scratch dependencies
 
     class="$1"

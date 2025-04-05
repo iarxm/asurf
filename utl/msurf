@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-# Iarom Madden mail@iarom.org
+# iarom madden mail@iarom.org
 
 # file processing
 # - retrieving from sd. moving and sorting files into session and client dir's. distributing via rclone 2 cloud
@@ -667,13 +667,3 @@ _main()
 }
 
 _main "${@}"
-
-#fifo_ds="$XDG_CACHE_HOME/asurf/fifo.dsmv" # - [ ] setup fifo based system?
-#_ini_sd_bkp() { sd_bkls="$(_find_d "$sd_dcim")"; }
-# archive
-#psep="#########################"
-#_sd_bkp() {
-    #_ini_sd_bkp;
-    #_prn_h "sd bkp"
-    #_mv_loop "$sd_bkls" "$sd_bkp" "sd_dcim bkp:"
-#}

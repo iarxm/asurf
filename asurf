@@ -1,12 +1,9 @@
 #!/bin/env bash
 
-# Iarom Madden future@iarom.org
-# centralise calling of asurf tools
-
-# init
+# iarom madden future@iarom.org
+# centralised calling of asurf tools
 
 [ -n "$1" ] && { cmd="$1"; shift 1; } || cmd="a"
-
 
 case $cmd in
     m) msurf $@ ;;
@@ -15,4 +12,3 @@ case $cmd in
     a) wsurf "a";;
     *) nnn ;;
 esac
-

@@ -1,49 +1,110 @@
-# asurf
-A powertool for sport analysis. The goal is rapid retrieval, sorting, frame by frame analysis annotation, multi pane comparisons, backups/version-control, gamification, goal/training collaboration/tracking and distribution. 
 
-Furthermore, this project involves a formal specification for a coaching workflow, in terms of cycles such as: { observation -> analysis -> intervention -> repeat }. In particular, specifying systems of naming, storing and processing analysis data, and structuring evaluation data and documents.
+# asurf
+
+A powertool for sport analysis.
+
+- Rapid retrieval
+- Sorting
+- Frame by frame analysis
+- Annotation
+- Multi pane comparisons
+- Backups/version-control
+- Gamification
+- Goal/training
+- Collaboration/tracking
+- Distribution. 
+
+A formal specification is designated for a coaching workflow, using the cycle { observation -> analysis -> intervention -> repeat }
+
+In particular, specifying systems of naming, storing and processing analysis data, and structuring evaluation data and documents.
 
 There will be tools introduced over time which will automate processes such as technical evaluations and provide a professional means of collaboration on goal setting and training trackers. Tools such as latex and pandoc will be utilised to swiftly convert from analysis notes in markdown to publish documents as pdf's or html pages.
 
 ## Work In Progress
+
 The components of **asurf** are being integrated into this centralised project. **asurf** currently runs through some tinkering of configuration files. The first release will be made once the program can be easily launched on a linux system via a centralised cli tool 'asurf'. Many of the componenets have been worked out proto-typically on my local machine and are being worked on for integration.
 
+
 ## The problem
+
 Current analysis systems appear to be in their essence, bloated, proprietary, and over priced video annotators. There also appears to be a lack of specification for how to professionaly process and store the analysis data of athletes within the context of collaboration and publication.
 
 In terms of the bare fundamentals of functionality, what is required is the ability to rapidly view videos and associated data, generate analysis data in the form of written and visual annotations, process this into evaluations and immediately distribute. Furthermore to be able to collaborate effectively.
 
+
 ### The solution
+
 This project works via cli tools and generally adopts the idea of 'everything as a file' approach. This enables powerful UNIX tools to be adopted such as neovim, mpv, rclone, rsync, restic/borg, git, bash, and a cli file manager (such as nnn, ranger or lf), to name a few. This approach also allows for powerful extensibility and project forking. In the future, a core set of functionality will be provided with the ability to easily extend it for usages within particular contexts.
 
+
 ## Tools
+
 ### msurf
-'msurf' is used to import data from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. **msurf** uses rclone as a backend for distribution, to interface in the background with most commonly used cloud services.
+
+'msurf' imports from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. **msurf** uses rclone as a backend for distribution, to interface in the background with most commonly used cloud services.
+
 
 ### uview
+
 A cli file manager is used in conjuction with a preview program 'uview' to rapidly sort through the clips of a session. In particular, 'uview' interfaces with mpv. Mpv is configured and extended for frame by frame analysis via vim like binds, and lua extensions to utilise 'flameshot' as a visual annotator and 'neovim' as a longer form text annotator. 
 
+
 ### anotr
-The 'anotr' program is used to create annotations via the insertion of tags into the filename. This is an extremely useful solution to rapidly tag athletes to a clip, provide a rating and brief annotation and feedback notes. This serves as an initial analysis and can be immediately disributed to the athletes by the time the session is finished. The other tools can then be utilised to provide greater depth of analysis. 
+
+Create annotations via the insertion of tags into the filename. This enables rapid tagging of athlete identification string to a clip. Furthermore, it provide a rating, brief annotation and feedback notes. This serves as an initial analysis and can be immediately disributed to the athletes by the end of a session.
 
 Neovim for in depth written annotations and flameshot for visual annotations on the fly. Bindings can be setup to also smoothly import frames into programs such as Gimp.
 
+
 ### wconf
-'wconf' is utilised to automatically open programs in specific window and workspace configurations for various workflows.
+
+Automatically open programs in specific window and workspace configurations for various workflows.
+
 
 ### more
-Refer to my backup program for an efficient indepth solution to backups. When we frame sport analysis as a form of data science, the number 1 priority then becomes data security.
+
+Refer to backup program for a practical solution to backups. When approaching sport analysis as data science, the first priority is data security.
+
 
 ## Instalation
-#### DEPENDENCIES:
+
+### DEPENDENCIES
+
 ```bash
 mpv
+bash
 ```
+
 #### OPTIONAL
+
 ```bash
 i3 neovim nnn
 ```
+
 #### Install
+
+
+## Development
+
+### Roadmap
+
+- [ ] Clean up current scripts and integrate
+- [ ] Centralise related configuration files: mpv; nnn; i3
+- [ ] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
+
+
+### Future
+
+- [ ] Convert to C code
+- [ ] Window container
+- [ ] Out of the box
+
+
+### Vision
+
+- [ ] Interface with a database system
+- [ ] Integrate into ai cv and llm models
+- [ ] gamification of athlete development
 
 
 # DESIGN PHILOSOPHY
@@ -52,19 +113,4 @@ i3 neovim nnn
 
 - Modularity
 
-## Roadmap
-- [ ] Clean up current scripts and integrate
-- [ ] Centralise related configuration files: mpv; nnn; i3
-- [ ] Method of launching mpv with specific configs.. (way of packaging it up into an mpv wrapper or larger script?)
-
-### Longer term
-- [ ] Convert to C code
-- [ ] Window container
-- [ ] Out of the box
-
-### Vision
-- [ ] Interface with a database system
-- [ ] Integrate into ai cv and llm models
-- [ ] gamification of athlete development
-
-<!--- vim:ft=markdown
+<!--- vim:ft=markdown:--->
