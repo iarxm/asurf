@@ -1,18 +1,17 @@
-
 # asurf
 
-A powertool for sport analysis.
+A power-tool for sport analysis.
 
-- Rapid retrieval
-- Sorting
-- Frame by frame analysis
-- Annotation
-- Multi pane comparisons
-- Backups/version-control
-- Gamification
-- Goal/training
-- Collaboration/tracking
-- Distribution. 
+Rapid retrieval  
+Sorting  
+Frame by frame analysis  
+Annotation  
+Multi pane comparisons  
+Backups/version-control  
+Gamification  
+Goal/training  
+Collaboration/tracking  
+Distribution.  
 
 A formal specification is designated for a coaching workflow, using the cycle { observation -> analysis -> intervention -> repeat }
 
@@ -20,14 +19,15 @@ In particular, specifying systems of naming, storing and processing analysis dat
 
 There will be tools introduced over time which will automate processes such as technical evaluations and provide a professional means of collaboration on goal setting and training trackers. Tools such as latex and pandoc will be utilised to swiftly convert from analysis notes in markdown to publish documents as pdf's or html pages.
 
-## Work In Progress
+
+Work In Progress
 
 The components of **asurf** are being integrated into this centralised project. **asurf** currently runs through some tinkering of configuration files. The first release will be made once the program can be easily launched on a linux system via a centralised cli tool 'asurf'. Many of the componenets have been worked out proto-typically on my local machine and are being worked on for integration.
 
 
 ## The problem
 
-Current analysis systems appear to be in their essence, bloated, proprietary, and over priced video annotators. There also appears to be a lack of specification for how to professionaly process and store the analysis data of athletes within the context of collaboration and publication.
+Current analysis systems appear to be in their essence, bloated, proprietary, and over priced video annotators. There also appears to be a lack of specification for how to process and store the analysis data of athletes within the context of collaboration and publication.
 
 In terms of the bare fundamentals of functionality, what is required is the ability to rapidly view videos and associated data, generate analysis data in the form of written and visual annotations, process this into evaluations and immediately distribute. Furthermore to be able to collaborate effectively.
 
@@ -66,9 +66,9 @@ Automatically open programs in specific window and workspace configurations for 
 Refer to backup program for a practical solution to backups. When approaching sport analysis as data science, the first priority is data security.
 
 
-## Instalation
+## Installation
 
-### DEPENDENCIES
+#### DEPENDENCIES
 
 ```bash
 mpv
@@ -83,6 +83,7 @@ i3 neovim nnn
 
 #### Install
 
+```make install```
 
 ## Development
 
@@ -107,10 +108,8 @@ i3 neovim nnn
 - [ ] gamification of athlete development
 
 
-# DESIGN PHILOSOPHY
+DESIGN PHILOSOPHY
 
-- SUCKLESS philosophy https://suckless.org/philosophy/
+SUCKLESS philosophy https://suckless.org/philosophy/  
+Modularity  
 
-- Modularity
-
-<!--- vim:ft=markdown:--->

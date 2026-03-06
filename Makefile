@@ -2,12 +2,12 @@ PREFIX=/usr/local
 BINDIR=$(PREFIX)/bin
 
 TOOLS=$(wildcard utl/*)
-MPX_CFG=$(HOME)/.config/mpx
+MPX_CFG=$(HOME)/.config/mpv/profile/mpx
 
 all:
 	@echo "Run 'make install' to install the scripts."
 
-install-mpv:
+install-mpx:
 	install -d $(MPX_CFG)
 	#sudo -u $(USER) cp -r mpx-cfg/* $(MPX_CFG)
 
@@ -24,5 +24,5 @@ uninstall-user:
 	$(MAKE) uninstall PREFIX="$(HOME)/.local/usr"
 
 install-user:
-	# user level installation for testing without sudo - call install from nvim with ease
+	# user level installation for testing 
 	$(MAKE) install PREFIX="$(HOME)/.local/usr"
