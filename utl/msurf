@@ -1,22 +1,22 @@
 #!/bin/env bash
-
-# iarom madden mail@iarom.org
+# iarom mail@iarom.org
 
 # file processing
-# - retrieving from sd. moving and sorting files into session and client dir's. distributing via rclone 2 cloud
+# retrieving from sd. moving and sorting files into session and client dirs
+# distributing via rclone 2 cloud
 
 # functions
-# - cp: sd/dcim -> wspace
-# - rc: wsapce -> cloud
-# - sd detection
-# - batch moves
-# - post move syncs/hooks
-# - auto sorting dirs; date; file size
-# - push to remotes; distribution
+# cp: sd/dcim -> wspace
+# rc: wsapce -> cloud
+# sd detection
+# batch moves
+# post move syncs/hooks
+# auto sorting dirs; date; file size
+# push to remotes; distribution
 
 # init cfg
 
-# - [ ] set personal configs via external file (migrate to python and use a config modulde...)
+# TASK set personal configs via external file (migrate to python and use a config modulde...)
 
 _ini()
 {
@@ -88,7 +88,9 @@ _a2b()
 _find_d_grp()
 {
     find "${1}" \
-        -mindepth 1 -maxdepth 1 -type d \
+        -mindepth 1 \
+        -maxdepth 1 \
+        -type d \
         -regextype posix-extended \
         -regex ".*${2}" \
         -exec realpath {} \;
@@ -110,7 +112,8 @@ _rc_syc()
         -vP \
         --track-renames \
         --create-empty-src-dirs \
-        "${syc_src}" "${syc_dst}"
+        "${syc_src}" \
+        "${syc_dst}"
 }
 
 _mv_loop()
@@ -124,10 +127,12 @@ _mv_loop()
 
 # test
 
-_test_dir_exis()
+_tst_dir()
 {
-    # - [ ] remove func - too convoluted
-    _prn_b "checking if dir [ ${1} ] exists"
+    eval m="${!1}"
+    echo $m
+    exit
+    _prn_b "checking if dir [ $(eval ${!1}) ] exists"
     if [ -d "${!1}" ]
     then
         return 0
@@ -135,11 +140,6 @@ _test_dir_exis()
         _prn_b "failed to match dir [ ${1} ]; return 1"
         return 1
     fi
-}
-
-_test_dir()
-{
-    _test_dir_exis "${1}"
     [ $? -eq 1 ] && return 1
     _a2b "$1" "$2" 
     _prn_b "$1 match -> ${2} = ${!2}"
@@ -162,7 +162,7 @@ _sd_r_i()
 {
     [ -d "${sd_r}" ] && return 1
     _set_sd_i
-    _test_dir sd_i sd_r
+    _tst_dir sd_i sd_r
     [ $? -eq 1 ] \
         || _prn_b "sd root has been set as the input arg"
 }
@@ -172,7 +172,7 @@ _sd_r_m()
     [ -d "${sd_r}" ] && return 1
     _prn_l
     _set_sd_m
-    _test_dir sd_m sd_r
+    _tst_dir sd_m sd_r
     [ $? -eq 1 ] \
         || _prn_b "sd root has been set by regx"
 }
