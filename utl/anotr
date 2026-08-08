@@ -1,22 +1,16 @@
 #!/bin/env bash
 
 # IAROM MADDEN mail@iarom.org
-#
 # anotr: rapid filename annotations
-# 
 #   tag_add: add Sx.Rx.Nx
 #   tag_rm: undu 'add', keep zX..
 #   tag-cl: clone file
-#
 # adding format:
 #   {m_pre.m_id} . {m_s.m_r.m_n} . {m_add} . {.m_z.m_ext}
-#
 # adding format:
 #   {m_pre.m_id} . {m_s.m_r.m_n} . {m_add} . {.m_z.m_ext}
-#
 # undu format:
 #   {m_pre.m_id} . {.m_z.m_ext}
-#
 # cp format:
 #   {m_pre.m_id} . "cl" . {.m_z.m_ext}
 
@@ -326,4 +320,3 @@ main() {
 
 
 main "${@}"
-
