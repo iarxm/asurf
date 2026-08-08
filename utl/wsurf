@@ -1,10 +1,8 @@
 #!/bin/env bash
-
 # iarom madden mail@iarom.org
-#
 # analysis workspace config
-# - program window layouts for coaching workflows
-# - video analysis window layout
+# program window layouts for coaching workflows
+# video analysis window layout
 
 [ -z "${1}" ] && cmd="aa" || cmd="${1}"
 shift 1
