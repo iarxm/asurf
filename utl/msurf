@@ -16,8 +16,6 @@
 
 # init cfg
 
-# TASK set personal configs via external file (migrate to python and use a config modulde...)
-
 _ini()
 {
     # loaded via config file
@@ -33,13 +31,24 @@ _ini()
     declare -g rep_g1_x
     declare -g rep_dv_b
 
-    source "${XDG_CONFIG_HOME}/asurf/env"
+    local config_home="${XDG_CONFIG_HOME:-${HOME}/.config}"
+    local config_file="${config_home}/asurf/env"
+
+    if [ ! -r "${config_file}" ]
+    then
+        _prn_b "configuration not found: ${config_file}"
+        _prn_b "create it with rx, dst_i_def, SD discovery, and remote settings"
+        exit 1
+    fi
+    # shellcheck source=/dev/null
+    source "${config_file}"
 
     # set later
     declare -g psep=""
-    declare -g prefix="MS"
+    declare -g prefix="MSURF"
     declare -g rgx_sd="${rgx_sdx}"
     declare -g sd_mnt="${sdx_mntx}"
+    declare -g sd_srt_pattern="${sd_srt_patterns}"
 
     declare -g sd_i=""    # sd path as arg
     declare -g sd_m=""    # sd path auto matched
@@ -52,23 +61,22 @@ _ini()
     declare -g dst=""                  # dst full path
 }
 
-_prn_l()     { printf "${prefix}:%s\n" " "; }
+_prn_l()     { printf "%s\n" " "; }
 
 _prn_c()     { printf "%s\n" "${1}"; }
 
-_prn_b()     { printf "${prefix}: %s\n" "${@}" ; }
+_prn_b()     { printf "%s\n" "${@}" ; }
 
 _prn_h()
 {
-    printf "${prefix}: %s\n" \
-        "${psep}" \
+    printf "%s\n" \
         "# ${1}" \
         "${psep}"
 }
 
 _prn_h2()
 {
-    printf "${prefix}: %s\n" \
+    printf "%s\n" \
         "${psep}" \
         "# ${1}"
 }
@@ -92,7 +100,7 @@ _find_d_grp()
         -maxdepth 1 \
         -type d \
         -regextype posix-extended \
-        -regex ".*${2}" \
+        -regex ".*(${2})" \
         -exec realpath {} \;
             #| grep -E "${2}"
 }
@@ -129,52 +137,54 @@ _mv_loop()
 
 _tst_dir()
 {
-    eval m="${!1}"
-    echo $m
-    exit
-    _prn_b "checking if dir [ $(eval ${!1}) ] exists"
-    if [ -d "${!1}" ]
+    local value="${!1}"
+    _prn_b "checking whether dir exists [ ${value} ]"
+    if [ -d "${value}" ]
     then
+        printf -v "${2}" '%s' "${value}"
         return 0
     else
         _prn_b "failed to match dir [ ${1} ]; return 1"
         return 1
     fi
-    [ $? -eq 1 ] && return 1
-    _a2b "$1" "$2" 
-    _prn_b "$1 match -> ${2} = ${!2}"
 }
 
 # sd
 
 _set_sd_m()
 {
+    [ -d "${sd_mnt}" ] || return 1
     sd_m=$(_find_d_grp "${sd_mnt}/" "${rgx_sd}") # '../' required
 }
 
 _set_sd_i()
 {
     [ -n "${sd_i}" ] || return 1
-    sd_i="$(realpath "${HOME}/${sd_i}")"
+    if [[ "${sd_i}" = /* ]]
+    then
+        sd_i="$(realpath "${sd_i}")"
+    else
+        sd_i="$(realpath "${HOME}/${sd_i}")"
+    fi
 }
 
 _sd_r_i()
 {
-    [ -d "${sd_r}" ] && return 1
+    [ -d "${sd_r}" ] && return 0
     _set_sd_i
+    [ -n "${sd_i}" ] || return 1
     _tst_dir sd_i sd_r
-    [ $? -eq 1 ] \
-        || _prn_b "sd root has been set as the input arg"
+    [ "$?" -eq 0 ] && _prn_b "sd root has been set as the input arg"
 }
 
 _sd_r_m()
 {
-    [ -d "${sd_r}" ] && return 1
+    [ -d "${sd_r}" ] && return 0
     _prn_l
     _set_sd_m
+    [ -n "${sd_m}" ] || return 1
     _tst_dir sd_m sd_r
-    [ $? -eq 1 ] \
-        || _prn_b "sd root has been set by regx"
+    [ "$?" -eq 0 ] && _prn_b "sd root has been set by regex"
 }
 
 _sd_set_dcim_x()
@@ -189,18 +199,25 @@ _sd_ini_imp()
 {
     if [ -z "${dst_i}" ]
     then
-        dst="$(realpath "${r}/${dst_i_def}")"
+        dst_i="${dst_i_def}"
     else
-        dst="$(realpath "${r}/${dst_i}")"
+        dst_i="${dst_i}"
     fi
+
+    dst="$(realpath -m "${r}/${dst_i}")"
+    case "${dst}" in
+        "${r}"|"${r}"/*) ;;
+        *)
+            _prn_b "destination must be below workspace root [ ${r} ]"
+            _exit1
+            ;;
+    esac
 }
 
 _sd_ini()
 {
-    # test sd existsl; set dcim loc
-    #[ -d "$sd_dcim" ] && return # TODO: func which returns parent func?
-    sd_i=${1}
-    dst_i=${2}
+    sd_i="${1:-}"
+    dst_i="${2:-}"
     _sd_ini_imp
     _sd_r_i
     _sd_r_m
@@ -219,27 +236,238 @@ _sd_prn()
 
 # sd_mv
 
-_sd_rs()   { _rs "${sd_dcim}/" "${dst}"; }
+_sd_rs()
+{
+    mkdir -p "${dst}"
+    _rs "${sd_dcim}/" "${dst}/"
+}
    
 _sd_bkp_ini()
 {
     sd_bkp_src="$(_find_d "${sd_dcim}")"
-    mkdir -p ${sd_bkp:="${sd_r}/${sd_bkp_suffix}"}
+    sd_bkp="${sd_bkp:-${sd_r}/${sd_bkp_suffix}}"
+    mkdir -p "${sd_bkp}"
     _prn_h "sd bkp"
 }
 
 _sd_bkp()
 {
-    [ -d "${sd_dcim}" ] || _sd_ini
+    [ -d "${sd_dcim}" ] || _sd_ini "${@}"
     _sd_bkp_ini
     _mv_loop "${sd_bkp_src}" "${sd_bkp}"
 }
 
 _sd_mvx ()
 {
+    # Positional `sd mv` may use configured card discovery; make a newly
+    # inserted card available before that discovery is attempted.
+    [ -n "${1:-}" ] || _sd_mount || return 1
     _sd_ini "${@}"
-    _sd_rs
+    _sd_rs || return 1
     _sd_bkp
+}
+
+_sd_mount()
+{
+    command -v lsblk >/dev/null || { _prn_b "lsblk is required to find SD cards"; return 1; }
+    command -v udisksctl >/dev/null || { _prn_b "udisksctl is required to mount SD cards"; return 1; }
+
+    if [ "$#" -gt 1 ]
+    then
+        _prn_b "mount accepts at most one block-device path"
+        return 1
+    fi
+
+    if [ "$#" -eq 1 ]
+    then
+        case "$1" in
+            /dev/*) ;;
+            *)
+                _prn_b "block-device path must start with /dev/: $1"
+                return 1
+                ;;
+        esac
+        _prn_b "mounting requested block device: $1"
+        udisksctl mount -b "$1" || {
+            _prn_b "mount failed; check that udisksd and your desktop login session are active"
+            return 1
+        }
+        return 0
+    fi
+
+    local dev type removable mounted is_card found=0
+    while read -r dev type removable mounted
+    do
+        [ "${type}" = "part" ] || continue
+        is_card=0
+        [ "${removable}" = "1" ] && is_card=1
+        # Built-in SD readers are commonly exposed as mmcblk devices with
+        # RM=0, even though their partitions are removable media.
+        case "${dev}" in
+            /dev/mmcblk*p[0-9]*) is_card=1 ;;
+        esac
+        [ "${is_card}" -eq 1 ] || continue
+        found=1
+        if [ -n "${mounted}" ]
+        then
+            _prn_b "already mounted: ${dev} -> ${mounted}"
+        else
+            _prn_b "mounting removable card partition: ${dev}"
+            udisksctl mount -b "${dev}" || {
+                _prn_b "mount failed; check that udisksd and your desktop login session are active"
+                return 1
+            }
+        fi
+    done < <(lsblk -pnro NAME,TYPE,RM,MOUNTPOINT)
+
+    [ "${found}" -eq 1 ] || _prn_b "no removable or MMC SD-card partitions found"
+}
+
+_sd_cp()
+{
+    local cp_dir="" cp_subdir="" cp_sd="" cp_mount=0
+
+    while [ "$#" -gt 0 ]
+    do
+        case "$1" in
+            help|--help|-h) _help_sd_cp; return 0 ;;
+            --dir|--subdir|--source|--sd)
+                if [ "$#" -lt 2 ] || [ -z "$2" ]
+                then
+                    _prn_b "$1 requires a value"
+                    return 1
+                fi
+                case "$1" in
+                    --dir) cp_dir="$2" ;;
+                    --subdir) cp_subdir="$2" ;;
+                    --source|--sd) cp_sd="$2" ;;
+                esac
+                shift 2
+                ;;
+            --mount)  cp_mount=1; shift ;;
+            *)
+                _prn_b "unknown cp option: $1"
+                _help
+                return 1
+                ;;
+        esac
+    done
+
+    # An unqualified import is the normal coaching workflow: take the detected
+    # card and place it in the configured default inbox. A supplied subdir is
+    # appended to either the configured default or an explicit --dir.
+    cp_dir="${cp_dir:-${dst_i_def}}"
+    [ -n "${cp_subdir}" ] && cp_dir="${cp_dir}/${cp_subdir}"
+
+    # Auto-source copies should make a newly inserted card available before
+    # trying the configured mount-point discovery. _sd_mount leaves an already
+    # mounted card alone, so this is safe on every normal `sd cp` invocation.
+    if [ -z "${cp_sd}" ] || [ "${cp_mount}" -eq 1 ]
+    then
+        _sd_mount || return 1
+    fi
+
+    _sd_ini "${cp_sd}" "${cp_dir}"
+    _sd_rs
+}
+
+_sd_mv()
+{
+    local mv_dir="" mv_subdir="" mv_sd="" mv_mount=0
+    local -a positional=()
+
+    while [ "$#" -gt 0 ]
+    do
+        case "$1" in
+            help|--help|-h) _help_sd_mv; return 0 ;;
+            --dir|--subdir|--source|--sd)
+                if [ "$#" -lt 2 ] || [ -z "$2" ]
+                then
+                    _prn_b "$1 requires a value"
+                    return 1
+                fi
+                case "$1" in
+                    --dir) mv_dir="$2" ;;
+                    --subdir) mv_subdir="$2" ;;
+                    --source|--sd) mv_sd="$2" ;;
+                esac
+                shift 2
+                ;;
+            --mount) mv_mount=1; shift ;;
+            --*)
+                _prn_b "unknown mv option: $1"
+                _help_sd_mv
+                return 1
+                ;;
+            *) positional+=("$1"); shift ;;
+        esac
+    done
+
+    if [ "${#positional[@]}" -gt 2 ]
+    then
+        _prn_b "mv accepts at most SD_ROOT and DESTINATION positional arguments"
+        return 1
+    fi
+
+    [ -n "${mv_sd}" ] || [ "${#positional[@]}" -eq 0 ] || mv_sd="${positional[0]}"
+
+    if [ -n "${mv_dir}" ] || [ -n "${mv_subdir}" ]
+    then
+        mv_dir="${mv_dir:-${dst_i_def}}"
+        [ -n "${mv_subdir}" ] && mv_dir="${mv_dir}/${mv_subdir}"
+    elif [ "${#positional[@]}" -gt 1 ]
+    then
+        mv_dir="${positional[1]}"
+    fi
+
+    [ "${mv_mount}" -eq 0 ] || _sd_mount || return 1
+    _sd_mvx "${mv_sd}" "${mv_dir}"
+}
+
+_all_xa()
+{
+    _srt_sd "${@}"
+    _sd_mvx "${@}"
+}
+
+_all_xb()
+{
+    _all_xa "${@}"
+}
+
+_all_xc()
+{
+    local sd_root="${1:-}" destination="${2:-}" sync_path="${3:-${destination}}"
+    _all_xb "${sd_root}" "${destination}" || return 1
+    _syc_o1_x "${sync_path}"
+}
+
+_all_sd()
+{
+    _srt_sd "${@}"
+    _sd_mvx "${@}"
+}
+
+_sd_command()
+{
+    local sd_subcommand="${1:-}"
+    [ "$#" -gt 0 ] && shift
+
+    case "${sd_subcommand}" in
+        mount)             _sd_mount "${@}" ;;
+        cp|import)         _sd_cp "${@}" ;;
+        prn|print)         _sd_prn "${@}" ;;
+        mv|move)           _sd_mv "${@}" ;;
+        bkp|backup)        _sd_bkp "${@}" ;;
+        all)               _all_sd "${@}" ;;
+        macro-a)           _all_xa "${@}" ;;
+        help|--help|-h|'') _help_sd ;;
+        *)
+            _prn_b "unknown sd subcommand: ${sd_subcommand}"
+            _help
+            return 2
+            ;;
+    esac
 }
 
 # srt: date and dirnames
@@ -361,6 +589,8 @@ _srt_date_x()
 
 _srt_date_r_ls() { _find_d_grp "${src_srt}" "${sd_srt_pattern}"; }
 
+_srt_date_dir() { _srt_date_r "${@}"; }
+
 _srt_date_r_lp()
 {
     for d in $(_srt_date_r_ls)
@@ -380,7 +610,7 @@ _srt_date_r()
 
 _srt_sd()
 {
-    [ -n "${sd_dcim}" ] || _sd_ini
+    [ -n "${sd_dcim}" ] || _sd_ini "${@}"
     _srt_date_r "${sd_dcim}"
 }
 
@@ -553,13 +783,18 @@ _syc_ini()
 {
     r_c="${1}"
     i="${2}"
+    if [ -z "${i}" ]
+    then
+        _prn_b "sync requires a path relative to the workspace root"
+        return 1
+    fi
     syc_src="${r}/${i}"
     syc_dst="${r_c}/${i}"
 }
 
 _syc_x()
 {
-    _syc_ini "${@}"
+    _syc_ini "${@}" || return 1
     _prn_h "rclone sync to < ${syc_src} >"
     _rc_syc
 }
@@ -583,86 +818,225 @@ _syc_22_()
 
 # macros
 
-_all_xa()
+_srt_command()
 {
-    _srt_sd "${@}"
-    _sd_mvx "${@}"
+    local srt_subcommand="${1:-}"
+    [ "$#" -gt 0 ] && shift
+
+    case "${srt_subcommand}" in
+        help|--help|-h|'') _help_srt ;;
+        size|s10|s60|s200) _unavailable "srt ${srt_subcommand}" ;;
+        dir) _srt_date_dir "${@}" ;;
+        sd) _srt_sd "${@}" ;;
+        *) _unavailable "srt ${srt_subcommand:-<missing subcommand>}" ;;
+    esac
 }
 
-_all_xb()
+_sync_command()
 {
-    _all_xa "${@}"
-    _sd_bkp
+    local sync_subcommand="${1:-}"
+    [ "$#" -gt 0 ] && shift
+
+    case "${sync_subcommand}" in
+        help|--help|-h)    _help_sync ;;
+        y21)               _unavailable "sync y21" ;;
+        dvb)               _syc_dv_b "${@}" ;;
+        g1)                _syc_g1_x "${@}" ;;
+        o1|a)              _syc_o1_x "${@}" ;;
+        *)                 _syc_o1_x "${@}" ;;
+    esac
 }
 
-_all_xc()
+_macro_command()
 {
-    _all_xb "${@}"
-    _syc_o1_x
+    local macro_subcommand="${1:-}"
+    [ "$#" -gt 0 ] && shift
+
+    case "${macro_subcommand}" in
+        help|--help|-h|'') _help_macro ;;
+        a) _all_xa "${@}" ;;
+        b) _all_xb "${@}" ;;
+        c) _all_xc "${@}" ;;
+        sd) _sd_command all "${@}" ;;
+        *) _unavailable "macro ${macro_subcommand:-<missing subcommand>}" ;;
+    esac
 }
 
-_all_sd()
+_unavailable()
 {
-    _srt_sd
-    _sd_mvx "${@}"
+    _prn_b "$1 is not implemented; see 'msurf help' for supported commands"
+    return 2
+}
+
+_client_command()
+{
+    case "${1:-}" in
+        help|--help|-h|'') _help_client ;;
+        *) _mv2cl "${@}" ;;
+    esac
+}
+
+_help_sd()
+{
+    cat <<'EOF'
+SD-card commands:
+  sd mount [BLOCK_DEVICE]
+      Mount all available unmounted removable-card partitions with udisksctl.
+      Built-in MMC readers (for example /dev/mmcblk0p1) are recognised even
+      when Linux reports RM=0. Pass a block-device path to mount it explicitly.
+      Already-mounted card partitions are reported and left unchanged.
+  sd prn [SD_ROOT]
+      Show the SD root and DCIM directory selected from SD_ROOT or configured
+      automatic discovery (sdx_mntx + rgx_sdx).
+  sd cp [--dir DIR] [--subdir SUBDIR] [--source SD_ROOT|--sd SD_ROOT] [--mount]
+      Copy the selected SD_ROOT/DCIM into rx/DIR/SUBDIR. Without --dir, use
+      dst_i_def from the config; without --source, use configured mounted-card
+      discovery. This leaves the SD card unchanged. --mount runs card mounting
+      first.
+  sd mv [SD_ROOT] [DESTINATION]
+  sd mv [--dir DIR] [--subdir SUBDIR] [--source SD_ROOT|--sd SD_ROOT] [--mount]
+      Copy and archive. It accepts the same source and destination options as
+      `sd cp`; positional arguments remain supported. This moves DCIM
+      directories to backup after the copy.
+  sd bkp [SD_ROOT]
+      Move immediate directories from the selected card's DCIM into its backup
+      directory. This changes the card; use only after confirming the import.
+  sd all [SD_ROOT] [DESTINATION]
+      Sort the card by date, then import and archive its DCIM directories.
+      This is the previous `macro sd` workflow.
+  sd macro-a [SD_ROOT] [DESTINATION]
+      Compatibility handle for the previous macro-A SD workflow.
+
+`sd import` is retained as a compatibility alias for `sd cp`.
+EOF
+}
+
+_help_sd_cp()
+{
+    cat <<'EOF'
+SD copy command:
+  msurf sd cp [--dir DIR] [--subdir SUBDIR] [--source SD_ROOT|--sd SD_ROOT] [--mount]
+
+Copies DCIM into the workspace without changing the card. With no --dir, the
+destination is rx/dst_i_def; --subdir is appended when supplied. With no source,
+an available SD card is mounted if necessary and discovered from the config.
+EOF
+}
+
+_help_sd_mv()
+{
+    cat <<'EOF'
+SD copy-and-archive command:
+  msurf sd mv [SD_ROOT] [DESTINATION]
+  msurf sd mv [--dir DIR] [--subdir SUBDIR] [--source SD_ROOT|--sd SD_ROOT] [--mount]
+
+Copies DCIM into the workspace, then moves the card's remaining DCIM directories
+to its configured backup directory. Option destinations resolve like `sd cp`:
+--dir is relative to rx, --subdir is appended, and no --dir uses dst_i_def.
+EOF
+}
+
+_help_srt()
+{
+    cat <<'EOF'
+Sorting commands:
+  srt|sr|sz dir DIRECTORY
+      Interactively sort files in matching immediate child directories of
+      DIRECTORY into date/time-and-suffix directories. Matching uses the
+      configured sd_srt_patterns regex.
+  srt|sr|sz sd [SD_ROOT]
+      Apply the same interactive date sort to the selected card's DCIM.
+  srt|sr|sz size|s10|s60|s200
+      Reserved legacy size-sorting handles. They are intentionally disabled
+      until their file-grouping rules are completed.
+EOF
+}
+
+_help_client()
+{
+    cat <<'EOF'
+Client transfer:
+  cl|client-x SOURCE_DIR CLIENT_ROOT CLIENT_PREFIX
+      Move files named with CLIENT_PREFIX from SOURCE_DIR into the matching
+      session directory below CLIENT_ROOT. This moves files, not copies them.
+EOF
+}
+
+_help_sync()
+{
+    cat <<'EOF'
+Remote sync commands (rclone sync; destination-only files may be deleted):
+  sy|sync|syc [o1] RELATIVE_PATH
+      Sync rx/RELATIVE_PATH to rep_o1_x/RELATIVE_PATH (the default target).
+  sy|sync|syc g1 RELATIVE_PATH
+      Sync to rep_g1_x.
+  sy|sync|syc dvb RELATIVE_PATH
+      Sync to rep_dv_b.
+EOF
+}
+
+_help_macro()
+{
+    cat <<'EOF'
+Legacy macro commands (all can move files on the card):
+  macro|m|a|al a [SD_ROOT] [DESTINATION]
+      Sort the card by date, import it, then archive its DCIM directories.
+  macro|m|a|al b [SD_ROOT] [DESTINATION]
+      Alias for macro a, retained for compatibility.
+  macro|m|a|al c [SD_ROOT] [DESTINATION] [RELATIVE_SYNC_PATH]
+      Run macro b, then sync RELATIVE_SYNC_PATH (or DESTINATION) to o1.
+  macro|m|a|al sd [SD_ROOT] [DESTINATION]
+      Compatibility alias for `sd all`.
+EOF
 }
 
 _help()
 {
-    _prn_b "TODO"
+    printf '%s\n' "${prefix}: import, sort, distribute, and archive camera media"
+    cat <<'EOF'
+
+Usage:
+  msurf COMMAND [ARGUMENTS]
+
+Top-level commands: sd, cp, cl, srt, sync, macro, help
+
+Use `msurf COMMAND help` for command-specific help.
+EOF
+
+    _help_sd
+    _help_srt
+    _help_client
+    _help_sync
+    _help_macro
 }
 
 _no_arg()
 {
-    _prn_b "arguments required"
-    # todo - print simplified cli cmd help structure
+    _help
 }
 
 _main()
 {
-    cmd="${1}" && shift 1
+    if [ "$#" -gt 0 ]
+    then
+        cmd="${1}"
+        shift
+    else
+        cmd="help"
+    fi
 
     _ini
-
-    _prn_h "initialise msurf"
+    _prn_h "msurf"
 
     case ${cmd} in
-        cl|client-x)      _mv2cl      "${@}" ;;
-        sd-bkp|sdbkp)     _sd_bkp     "${@}" ;;
-        sd-prn|sdprn)     _sd_prn     "${@}" ;;
-        sd-mv|sdmv)       _sd_mvx     "${@}" ;;
-        sr|srt|sz)
-            cmd_sub="${1}" && shift 1
-            case ${cmd_sub} in
-                size)   _srt_size     "${@}" ;;
-                s10)    _srt_sz10     "${@}" ;;
-                s60)    _srt_sz60     "${@}" ;;
-                s200)   _srt_sz200    "${@}" ;;
-                dir)    _srt_date_dir "${@}" ;; # sort arg dir
-                sd)     _srt_sd ;;
-            esac
-            ;;
-        sy|sync|syc)
-            cmd_sub="${1}" && shift 1
-            case ${cmd_sub} in
-                y21)    _syc_year     "${@}" ;;
-                dvb)    _syc_dv_b     "${@}" ;;
-                g1)     _syc_g1_x     "${@}" ;;
-                o1)     _syc_o1_x     "${@}" ;;
-                *)      _syc_o1_x     "${@}" ;;
-            esac
-            ;;
-        m|macro|a|al)
-            cmd_sub="${1}" && shift 1
-            case ${cmd_sub} in
-                a)      _all_xa    "${@}"   ;;
-                b)      _all_xb    "${@}"   ;;
-                c)      _all_xc    "${@}"   ;;
-                sd)     _all_sd    "${@}"   ;;
-            esac
-            ;;
-        help)      _help   ;;
-        *|noarg)   _no_arg ;;
+        sd)               _sd_command  "${@}" ;;
+        cl|client-x)      _client_command "${@}" ;;
+        cp|import)        _sd_cp       "${@}" ;;
+        sr|srt|sz)        _srt_command   "${@}" ;;
+        sy|sync|syc)      _sync_command  "${@}" ;;
+        m|macro|a|al)     _macro_command "${@}" ;;
+        help|--help|-h)   _help ;;
+        *)                _prn_b "unknown command: ${cmd}"; _help; return 2 ;;
     esac
 }
 

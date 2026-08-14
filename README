@@ -43,6 +43,62 @@ This project works via cli tools and generally adopts the idea of 'everything as
 
 'msurf' imports from the camera source into a working projects hierarchy. Dir's will be automatically sorted by date/time and the specification will involve abbreviating the session names. After analysis, 'msurf' can be used to automatically move the clips into client specific repo's and immediately distribute them via a cloud service. **msurf** uses rclone as a backend for distribution, to interface in the background with most commonly used cloud services.
 
+Mount available removable SD-card partitions (on Linux systems using udisks):
+
+```bash
+msurf sd mount
+# compatibility aliases: msurf mount, msurf --mount
+```
+
+Copy a card into an explicit project directory and subdirectory, relative to the
+configured `rx` workspace root. Without a source, `msurf` first mounts available
+SD cards if needed, then uses the configured mounted-card discovery. `--source`
+is useful when its mount path is known.
+
+```bash
+msurf sd cp # use the configured default destination and detected card
+msurf sd cp --dir 2026/client-name --subdir 0808-session
+msurf sd cp --dir 2026/client-name --subdir 0808-session --source /media/user/CARD
+```
+
+`msurf sd cp` leaves the card unchanged. Use `msurf sd mv` when you also want
+the card's remaining DCIM directories moved into its configured backup directory.
+
+`msurf sd import` remains an alias for `msurf sd cp`.
+
+For copy-and-archive operations, use either `msurf sd mv [SD_ROOT] [DESTINATION]`
+or `msurf sd mv --dir DIR --subdir SUBDIR [--source SD_ROOT]`. Use `msurf sd bkp`
+to archive a card separately.
+
+For the all-in-one SD workflow—sort, import, then archive the card—use:
+
+```bash
+msurf sd all [SD_ROOT] [DESTINATION]
+```
+
+### Shell completion
+
+`make install` installs completion definitions for Bash and Zsh alongside
+`msurf`. Zsh loads `_msurf` automatically on a new shell when `compinit` is
+enabled (the usual Zsh completion setup). For an uninstalled checkout, load the
+Bash completion in the current shell with:
+
+```bash
+source completions/msurf.bash
+```
+
+Add that line to `.bashrc` using this repository's absolute path if you want it
+available in every Bash session. Completion covers commands, aliases,
+subcommands, import options, and directory-valued arguments.
+
+For Zsh from an uninstalled checkout, add the completion directory to `fpath`
+before `compinit`:
+
+```zsh
+fpath=(/dat/ud/dva/asur/asurf/completions $fpath)
+autoload -Uz compinit && compinit
+```
+
 
 ### uview
 
@@ -73,6 +129,7 @@ Refer to backup program for a practical solution to backups. When approaching sp
 ```bash
 mpv
 bash
+udisks2 # for msurf mount
 ```
 
 #### OPTIONAL
@@ -112,4 +169,3 @@ DESIGN PHILOSOPHY
 
 SUCKLESS philosophy https://suckless.org/philosophy/  
 Modularity  
-

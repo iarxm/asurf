@@ -1,0 +1,112 @@
+#compdef msurf
+
+_msurf()
+{
+    local -a top_commands sd_commands sd_options sort_commands sync_commands macro_commands
+
+    top_commands=(
+        'sd:SD-card operations'
+        'cp:copy SD media without changing the card'
+        'import:compatibility alias for cp'
+        'cl:move client-labelled files'
+        'srt:sort media'
+        'sync:sync a workspace path to a remote'
+        'macro:run legacy macro workflows'
+        'help:show all help'
+    )
+    sd_commands=(
+        'mount:mount an available SD card'
+        'cp:copy media without changing the card'
+        'import:compatibility alias for cp'
+        'prn:show the selected SD card'
+        'mv:copy media then archive card directories'
+        'bkp:archive card directories'
+        'all:sort, copy, and archive'
+        'macro-a:legacy SD macro A'
+        'help:show SD help'
+    )
+    sd_options=(
+        '--dir=[destination relative to workspace]:directory:_files -/'
+        '--subdir=[subdirectory below destination]:directory:_files -/'
+        '--source=[mounted SD-card root]:directory:_files -/'
+        '--sd=[mounted SD-card root]:directory:_files -/'
+        '--mount[mount available SD cards before discovery]'
+        '--help[show command help]'
+        '-h[show command help]'
+    )
+    sort_commands=(
+        'dir:sort matching child directories'
+        'sd:sort the selected SD card'
+        'size:reserved'
+        's10:reserved'
+        's60:reserved'
+        's200:reserved'
+        'help:show sorting help'
+    )
+    sync_commands=(
+        'o1:sync to o1 remote'
+        'g1:sync to g1 remote'
+        'dvb:sync to dvb remote'
+        'y21:reserved'
+        'help:show sync help'
+    )
+    macro_commands=(
+        'a:sort, copy, and archive'
+        'b:compatibility alias for macro a'
+        'c:run macro b then sync'
+        'sd:compatibility alias for sd all'
+        'help:show macro help'
+    )
+
+    if (( CURRENT == 2 )); then
+        _describe -t commands 'msurf command' top_commands
+        return
+    fi
+
+    case "${words[2]}" in
+        sd)
+            if (( CURRENT == 3 )); then
+                _describe -t commands 'SD command' sd_commands
+                return
+            fi
+            case "${words[3]}" in
+                mount)
+                    compadd -- ${(f)"$(lsblk -pnro NAME,TYPE | awk '$2 == "part" { print $1 }')"}
+                    ;;
+                cp|import|mv|move)
+                    _arguments -s $sd_options
+                    ;;
+                prn|print|bkp|backup|all|macro-a)
+                    _files -/
+                    ;;
+            esac
+            ;;
+        cp|import)
+            _arguments -s $sd_options
+            ;;
+        cl|client-x)
+            _arguments '1:source directory:_files -/' '2:client root:_files -/' '3:client prefix:'
+            ;;
+        srt|sr|sz)
+            if (( CURRENT == 3 )); then
+                _describe -t commands 'sorting command' sort_commands
+            elif [[ "${words[3]}" == dir || "${words[3]}" == sd ]]; then
+                _files -/
+            fi
+            ;;
+        sync|sy|syc)
+            if (( CURRENT == 3 )); then
+                _describe -t commands 'sync target' sync_commands
+            else
+                _files -/
+            fi
+            ;;
+        macro|m|a|al)
+            if (( CURRENT == 3 )); then
+                _describe -t commands 'macro command' macro_commands
+            else
+                _files -/
+            fi
+            ;;
+    esac
+}

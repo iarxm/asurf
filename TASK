@@ -1,1 +1,28 @@
-utilize --scripts=.. in mpv to make a modular method of declaring the mpv specific part of the workflow
+# Planned work
+
+## Modular mpv scripts
+
+- [ ] Use `--scripts=…` in mpv to declare the mpv-specific workflow modularly.
+
+## Session/workspace workflow specification
+
+- [ ] Define a session specification that gives one coaching session a stable
+  name, workspace location, athlete/client context, source-media location, and
+  destinations for analysis, annotations, exports, and backup.
+- [ ] Add a shared `--session SESSION_NAME` option to workflow commands. It
+  should select the session specification and provide default directories,
+  rather than requiring each command to repeat a path.
+- [ ] Decide how a session is created and stored (for example, a small
+  file-based manifest under the workspace) and validate session names and
+  paths before any file-moving operation.
+- [ ] Make `msurf sd cp` / `msurf sd mv` resolve their destination from the
+  selected session when no explicit `--dir` or `--subdir` is given.
+- [ ] Extend the same session context to sorting, annotation, review, sync,
+  report/export, and client-distribution commands where it is useful.
+- [ ] Define precedence clearly: explicit command arguments override session
+  values; session values override global config defaults; global config remains
+  the fallback.
+- [ ] Add dry-run output that shows the chosen session, resolved paths, and
+  planned actions before a command copies, moves, or syncs media.
+- [ ] Add fixtures/tests for session lookup, default resolution, invalid or
+  missing sessions, and protection against paths outside the workspace root.
