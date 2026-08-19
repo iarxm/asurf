@@ -63,6 +63,8 @@ msurf sd cp --dir 2026/client-name --subdir 0808-session --source /media/user/CA
 
 `msurf sd cp` leaves the card unchanged. Use `msurf sd mv` when you also want
 the card's remaining DCIM directories moved into its configured backup directory.
+If a backup directory name already exists, `msurf` preserves it and appends the
+newest file's timestamp to the incoming directory name.
 
 `msurf sd import` remains an alias for `msurf sd cp`.
 

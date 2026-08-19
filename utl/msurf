@@ -245,16 +245,57 @@ _sd_rs()
 _sd_bkp_ini()
 {
     sd_bkp_src="$(_find_d "${sd_dcim}")"
-    sd_bkp="${sd_bkp:-${sd_r}/${sd_bkp_suffix}}"
+    sd_bkp="$(realpath -m "${sd_bkp:-${sd_r}/${sd_bkp_suffix}}")"
     mkdir -p "${sd_bkp}"
     _prn_h "sd bkp"
+}
+
+_sd_bkp_stamp()
+{
+    local newest
+
+    newest="$(find "${1}" -type f -printf '%T@\n' | sort -nr | head -n 1)"
+    newest="${newest%%.*}"
+    newest="${newest:-$(stat -c '%Y' "${1}")}" || return 1
+    date -d "@${newest}" '+%Y%m%d-%H%M%S'
+}
+
+_sd_bkp_dst()
+{
+    local src="${1}" bkp_root="${2}" base dst stamp n=1
+
+    base="$(basename "${src}")"
+    dst="${bkp_root}/${base}"
+    { [ -e "${dst}" ] || [ -L "${dst}" ]; } && {
+        stamp="$(_sd_bkp_stamp "${src}")" || return 1
+        dst="${bkp_root}/${base}-${stamp}"
+        while [ -e "${dst}" ] || [ -L "${dst}" ]
+        do
+            printf -v dst '%s/%s-%s-%02d' "${bkp_root}" "${base}" "${stamp}" "${n}"
+            n=$((n + 1))
+        done
+    }
+    printf '%s\n' "${dst}"
+}
+
+_sd_bkp_mv()
+{
+    local src dst
+
+    while IFS= read -r src
+    do
+        [ -n "${src}" ] || continue
+        dst="$(_sd_bkp_dst "${src}" "${sd_bkp}")" || return 1
+        _prn_b "${src} -> ${dst}"
+        mv "${src}" "${dst}" || return 1
+    done <<< "${sd_bkp_src}"
 }
 
 _sd_bkp()
 {
     [ -d "${sd_dcim}" ] || _sd_ini "${@}"
     _sd_bkp_ini
-    _mv_loop "${sd_bkp_src}" "${sd_bkp}"
+    _sd_bkp_mv
 }
 
 _sd_mvx ()
@@ -783,11 +824,6 @@ _syc_ini()
 {
     r_c="${1}"
     i="${2}"
-    if [ -z "${i}" ]
-    then
-        _prn_b "sync requires a path relative to the workspace root"
-        return 1
-    fi
     syc_src="${r}/${i}"
     syc_dst="${r_c}/${i}"
 }
@@ -835,14 +871,13 @@ _srt_command()
 _sync_command()
 {
     local sync_subcommand="${1:-}"
-    [ "$#" -gt 0 ] && shift
 
     case "${sync_subcommand}" in
         help|--help|-h)    _help_sync ;;
         y21)               _unavailable "sync y21" ;;
-        dvb)               _syc_dv_b "${@}" ;;
-        g1)                _syc_g1_x "${@}" ;;
-        o1|a)              _syc_o1_x "${@}" ;;
+        dvb)               shift; _syc_dv_b "${@}" ;;
+        g1)                shift; _syc_g1_x "${@}" ;;
+        o1|a)              shift; _syc_o1_x "${@}" ;;
         *)                 _syc_o1_x "${@}" ;;
     esac
 }
@@ -900,7 +935,8 @@ SD-card commands:
       directories to backup after the copy.
   sd bkp [SD_ROOT]
       Move immediate directories from the selected card's DCIM into its backup
-      directory. This changes the card; use only after confirming the import.
+      directory. A name collision is given the newest-file timestamp instead.
+      This changes the card; use only after confirming the import.
   sd all [SD_ROOT] [DESTINATION]
       Sort the card by date, then import and archive its DCIM directories.
       This is the previous `macro sd` workflow.
@@ -933,6 +969,7 @@ SD copy-and-archive command:
 Copies DCIM into the workspace, then moves the card's remaining DCIM directories
 to its configured backup directory. Option destinations resolve like `sd cp`:
 --dir is relative to rx, --subdir is appended, and no --dir uses dst_i_def.
+Existing backup names are preserved; collisions use the newest-file timestamp.
 EOF
 }
 
@@ -966,11 +1003,12 @@ _help_sync()
 {
     cat <<'EOF'
 Remote sync commands (rclone sync; destination-only files may be deleted):
-  sy|sync|syc [o1] RELATIVE_PATH
+  sy|sync|syc [o1] [RELATIVE_PATH]
       Sync rx/RELATIVE_PATH to rep_o1_x/RELATIVE_PATH (the default target).
-  sy|sync|syc g1 RELATIVE_PATH
+      With no path, sync rx itself to rep_o1_x.
+  sy|sync|syc g1 [RELATIVE_PATH]
       Sync to rep_g1_x.
-  sy|sync|syc dvb RELATIVE_PATH
+  sy|sync|syc dvb [RELATIVE_PATH]
       Sync to rep_dv_b.
 EOF
 }
