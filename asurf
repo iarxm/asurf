@@ -1,14 +1,254 @@
-#!/bin/env bash
+#!/usr/bin/env bash
+# asurf: local-first coaching workflow command line interface.
 
-# iarom mail@iarom.org
-# centralised calling of asurf tools
+set -o pipefail
 
-[ -n "$1" ] && { cmd="$1"; shift 1; } || cmd="a"
+program="${0##*/}"
+script_dir="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+config_home="${XDG_CONFIG_HOME:-${HOME}/.config}/asurf"
+config_file="${ASURF_CONFIG_FILE:-${config_home}/env}"
+data_home="${XDG_DATA_HOME:-${HOME}/.local/share}/asurf"
+session_dir="${ASURF_SESSION_DIR:-${data_home}/sessions}"
+current_file="${ASURF_CURRENT_FILE:-${data_home}/current-session}"
 
-case $cmd in
-    m) msurf $@ ;;
-    b) msurf "all" ;;
-    w) wsurf $@ ;;
-    a) wsurf "a";;
-    *) nnn ;;
+die() { printf '%s\n' "${program}: $*" >&2; exit 1; }
+note() { printf '%s\n' "$*"; }
+
+usage() {
+    cat <<'EOF'
+asurf: local-first coaching workflows
+
+Usage:
+  asurf doctor
+  asurf init [--workspace DIRECTORY]
+  asurf session create NAME [--dir RELATIVE_DIRECTORY] [--athletes LIST]
+  asurf session use NAME | status [NAME] | list
+  asurf ingest [--session NAME] [--archive --yes] [MSURF SD OPTIONS]
+  asurf sort [--session NAME]
+  asurf review [--session NAME] [FILE]
+  asurf annotate FILE
+  asurf publish --session NAME [o1|g1|dvb] --yes
+
+`msurf`, `anotr`, and `mpx` remain standalone commands. Run `asurf doctor`
+to see which optional workflow capabilities are available.
+EOF
+}
+
+tool_path() {
+    local tool="$1"
+    if [ -x "${script_dir}/utl/${tool}" ]; then
+        printf '%s\n' "${script_dir}/utl/${tool}"
+    elif command -v "${tool}" >/dev/null 2>&1; then
+        command -v "${tool}"
+    else
+        return 1
+    fi
+}
+
+valid_name() { [[ "$1" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; }
+session_file() { printf '%s/%s.env\n' "${session_dir}" "$1"; }
+
+read_field() {
+    local file="$1" wanted="$2" key value
+    while IFS='=' read -r key value; do
+        [ "${key}" = "${wanted}" ] && { printf '%s\n' "${value}"; return 0; }
+    done < "${file}"
+    return 1
+}
+
+session_name() {
+    local selected="${1:-}"
+    if [ -z "${selected}" ] && [ -r "${current_file}" ]; then
+        selected="$(<"${current_file}")"
+    fi
+    [ -n "${selected}" ] || die "no session selected; use 'asurf session create NAME' or pass --session NAME"
+    valid_name "${selected}" || die "invalid session name: ${selected}"
+    [ -r "$(session_file "${selected}")" ] || die "session not found: ${selected}"
+    printf '%s\n' "${selected}"
+}
+
+session_workspace() {
+    local selected="$1" file value
+    file="$(session_file "${selected}")"
+    value="$(read_field "${file}" workspace_dir)" || die "session has no workspace_dir: ${selected}"
+    [[ "${value}" != /* && "${value}" != *".."* ]] || die "unsafe workspace_dir in session: ${selected}"
+    printf '%s\n' "${value}"
+}
+
+load_root() {
+    [ -r "${config_file}" ] || die "configuration not found: ${config_file}; run 'asurf init'"
+    # This is the same user-owned Bash configuration format consumed by msurf.
+    # shellcheck source=/dev/null
+    source "${config_file}"
+    [ -n "${rx:-}" ] || die "rx is not set in ${config_file}"
+    realpath -m "${rx}"
+}
+
+command_doctor() {
+    local item command_name
+    note "asurf capability check"
+    printf 'config: %s\n' "$( [ -r "${config_file}" ] && printf ready || printf missing )"
+    for item in 'msurf:msurf' 'annotation:anotr' 'review profile:mpx' 'mpv:mpv' 'SD mount:udisksctl' 'remote sync:rclone' 'visual annotation:flameshot' 'text annotation:nvim' 'desktop workspace:i3-msg'; do
+        command_name="${item#*:}"
+        if tool_path "${command_name}" >/dev/null 2>&1 || command -v "${command_name}" >/dev/null 2>&1; then
+            printf '%-20s ready\n' "${item%%:*}"
+        else
+            printf '%-20s optional - missing %s\n' "${item%%:*}" "${command_name}"
+        fi
+    done
+}
+
+command_init() {
+    local workspace="${HOME}/asurf"
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --workspace) [ "$#" -gt 1 ] || die '--workspace needs a directory'; workspace="$2"; shift 2 ;;
+            -h|--help) usage; return 0 ;;
+            *) die "unknown init option: $1" ;;
+        esac
+    done
+    [ ! -e "${config_file}" ] || die "configuration already exists: ${config_file} (it was not changed)"
+    mkdir -p "${config_home}" "${workspace}" "${session_dir}"
+    umask 077
+    cat > "${config_file}" <<EOF
+# asurf and msurf configuration. Adjust these paths for your system.
+rx="${workspace}"
+dst_i_def="inbox"
+# Match the card mount directory name; set this before automatic SD discovery.
+rgx_sdx="^CHANGE-ME$"
+sdx_mntx="/run/media/${USER}"
+sd_srt_patterns=".*"
+sd_bkp_suffix="asurf-backup"
+# Set rclone destinations before using 'asurf publish'.
+rep_o1_x=""
+rep_g1_x=""
+rep_dv_b=""
+EOF
+    note "created ${config_file}"
+    note "workspace: ${workspace}"
+    note "next: asurf session create 2026-09-12-athlete-session"
+}
+
+command_session() {
+    local subcommand="${1:-}" name workspace athletes file root
+    [ "$#" -gt 0 ] && shift
+    case "${subcommand}" in
+        create)
+            name="${1:-}"; [ -n "${name}" ] || die 'session create needs NAME'; shift
+            valid_name "${name}" || die "invalid session name: ${name}"
+            workspace="sessions/${name}"; athletes=""
+            while [ "$#" -gt 0 ]; do
+                case "$1" in
+                    --dir) [ "$#" -gt 1 ] || die '--dir needs a value'; workspace="$2"; shift 2 ;;
+                    --athletes) [ "$#" -gt 1 ] || die '--athletes needs a value'; athletes="$2"; shift 2 ;;
+                    *) die "unknown session create option: $1" ;;
+                esac
+            done
+            [[ "${workspace}" != /* && "${workspace}" != *".."* ]] || die 'session --dir must be a safe path relative to rx'
+            file="$(session_file "${name}")"; [ ! -e "${file}" ] || die "session already exists: ${name}"
+            root="$(load_root)"; mkdir -p "${session_dir}" "${root}/${workspace}/media" "${root}/${workspace}/analysis" "${root}/${workspace}/reports"
+            umask 077
+            printf 'name=%s\nworkspace_dir=%s\nathletes=%s\ncreated_at=%s\n' "${name}" "${workspace}" "${athletes}" "$(date -Iseconds)" > "${file}"
+            printf '%s\n' "${name}" > "${current_file}"
+            note "created session ${name}: ${root}/${workspace}"
+            ;;
+        use)
+            name="$(session_name "${1:-}")"; mkdir -p "$(dirname "${current_file}")"; printf '%s\n' "${name}" > "${current_file}"; note "current session: ${name}"
+            ;;
+        status)
+            name="$(session_name "${1:-}")"; cat "$(session_file "${name}")"
+            ;;
+        list)
+            [ -d "${session_dir}" ] || return 0
+            find "${session_dir}" -maxdepth 1 -type f -name '*.env' -printf '%f\n' | sed 's/\.env$//' | sort
+            ;;
+        help|-h|--help|'') usage ;;
+        *) die "unknown session command: ${subcommand}" ;;
+    esac
+}
+
+command_ingest() {
+    local name="" workspace action=cp archive=0 yes=0 root tool
+    local -a forwarded=()
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --session) [ "$#" -gt 1 ] || die '--session needs a name'; name="$2"; shift 2 ;;
+            --archive) archive=1; shift ;;
+            --yes) yes=1; shift ;;
+            --dry-run) printf 'would run: msurf sd cp --dir SESSION/media ...\n'; return 0 ;;
+            *) forwarded+=("$1"); shift ;;
+        esac
+    done
+    name="$(session_name "${name}")"; workspace="$(session_workspace "${name}")"; root="$(load_root)"
+    [ "${archive}" -eq 0 ] || { [ "${yes}" -eq 1 ] || die 'archive moves card directories; repeat with --yes'; action=mv; }
+    tool="$(tool_path msurf)" || die 'msurf is not installed'
+    note "session ${name}: ${action} into ${root}/${workspace}/media"
+    "${tool}" sd "${action}" --dir "${workspace}/media" "${forwarded[@]}"
+}
+
+command_sort() {
+    local name="" workspace root tool yes=0 dry_run=0
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --session) [ "$#" -gt 1 ] || die '--session needs a name'; name="$2"; shift 2 ;;
+            --yes) yes=1; shift ;;
+            --dry-run) dry_run=1; shift ;;
+            *) die 'sort accepts --session NAME, --dry-run, and --yes only' ;;
+        esac
+    done
+    name="$(session_name "${name}")"; workspace="$(session_workspace "${name}")"; root="$(load_root)"
+    [ "${dry_run}" -eq 0 ] || { printf 'would run: msurf srt dir %s/%s/media\n' "${root}" "${workspace}"; return 0; }
+    [ "${yes}" -eq 1 ] || die 'sort moves files into date directories; repeat with --yes or use --dry-run'
+    tool="$(tool_path msurf)" || die 'msurf is not installed'
+    "${tool}" srt dir "${root}/${workspace}/media"
+}
+
+command_review() {
+    local name="" target="" workspace root tool
+    [ "${1:-}" = --session ] && { name="${2:-}"; shift 2; }
+    [ "$#" -le 1 ] || die 'review accepts one optional file'
+    target="${1:-}"
+    if [ -n "${name}" ] || [ -z "${target}" ]; then
+        name="$(session_name "${name}")"; workspace="$(session_workspace "${name}")"; root="$(load_root)"; target="${target:-${root}/${workspace}/media}"
+    fi
+    tool="$(tool_path mpx)" || die 'mpx is not installed'
+    exec "${tool}" "${target}"
+}
+
+command_annotate() {
+    local file="${1:-}" tool dir base
+    [ -n "${file}" ] || die 'annotate needs FILE'
+    [ -f "${file}" ] || die "not a file: ${file}"
+    tool="$(tool_path anotr)" || die 'anotr is not installed'
+    dir="$(dirname -- "${file}")"; base="$(basename -- "${file}")"
+    cd "${dir}" && exec "${tool}" tag.add "${base}"
+}
+
+command_publish() {
+    local name="" target=o1 yes=0 workspace tool
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --session) [ "$#" -gt 1 ] || die '--session needs a name'; name="$2"; shift 2 ;;
+            --yes) yes=1; shift ;;
+            o1|g1|dvb) target="$1"; shift ;;
+            *) die "unknown publish option: $1" ;;
+        esac
+    done
+    [ "${yes}" -eq 1 ] || die 'publish uses rclone sync and may delete remote files; repeat with --yes'
+    name="$(session_name "${name}")"; workspace="$(session_workspace "${name}")"
+    tool="$(tool_path msurf)" || die 'msurf is not installed'
+    "${tool}" sync "${target}" "${workspace}"
+}
+
+case "${1:-help}" in
+    doctor) shift; [ "$#" -eq 0 ] || die 'doctor accepts no arguments'; command_doctor ;;
+    init|config) shift; command_init "$@" ;;
+    session) shift; command_session "$@" ;;
+    ingest) shift; command_ingest "$@" ;;
+    sort) shift; command_sort "$@" ;;
+    review) shift; command_review "$@" ;;
+    annotate) shift; command_annotate "$@" ;;
+    publish) shift; command_publish "$@" ;;
+    help|-h|--help) usage ;;
+    *) die "unknown command: $1; run 'asurf help'" ;;
 esac

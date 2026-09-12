@@ -1,6 +1,52 @@
 # asurf
 
-A power-tool for sport analysis.
+A local-first coaching workflow power-tool. `asurf` provides one coaching CLI;
+its focused utilities remain available as standalone Unix tools.
+
+## Start here
+
+Install the scripts, create your editable local configuration, then create a
+session. No i3, cloud account, or database is required for this core workflow.
+
+```bash
+make install PREFIX="$HOME/.local"
+asurf doctor
+asurf init --workspace "$HOME/asurf-work"
+asurf session create 2026-09-12-athlete-session --athletes athlete-name
+asurf ingest --session 2026-09-12-athlete-session
+```
+
+The session creates `media`, `analysis`, and `reports` directories below the
+configured workspace. `asurf ingest` is copy-only by default. Adding
+`--archive --yes` uses the established `msurf sd mv` workflow and changes the
+card only after the import. See [the CLI guide](docs/cli.md) for the full
+workflow and capability tiers.
+
+`asurf` uses these components internally without taking them away from users:
+
+| Coaching task | Command | Existing component |
+| --- | --- | --- |
+| Camera import, sorting, archive, remote sync | `asurf ingest`, `sort`, `publish` | `msurf` |
+| Frame-by-frame review | `asurf review` | `mpx` / mpv |
+| Filename-based rapid tags | `asurf annotate FILE` | `anotr` |
+
+Desktop workspace automation remains optional and specific to the user's
+window-manager configuration. `asurf doctor` reports it as a capability rather
+than treating it as a prerequisite.
+
+## Project direction
+
+The stable interchange point is the session manifest: a small, user-owned file
+containing the session name, athlete list, and workspace-relative location.
+Explicit command arguments take precedence over the manifest; the manifest
+takes precedence over the global config. This supports both athlete-centric and
+session-centric work without imposing a database before the workflow has proved
+its shape.
+
+Detailed next milestones are in [docs/cli.md](docs/cli.md). The sections below
+describe the existing individual tools and their compatibility interfaces.
+The rationale and staged route to a Python orchestration layer are in
+[docs/architecture.md](docs/architecture.md).
 
 Rapid retrieval  
 Sorting  
